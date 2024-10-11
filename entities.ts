@@ -1,7 +1,7 @@
 import { sprite, Entity } from './engine';
 
 export class Coin extends Entity {
-    static res = ['/src/coins.png'];
+    static res = ['/assets/coins.png'];
     constructor(obj:sprite) {
         super();
         this.update({
@@ -15,7 +15,7 @@ export class Coin extends Entity {
     }
 }
 export class Factory extends Entity {
-    static res = ['/src/factory_new.png'];
+    static res = ['/assets/factory_new.png'];
     constructor() {
         super();
         this.update({
@@ -27,7 +27,7 @@ export class Factory extends Entity {
     }
 }
 export class Bank extends Entity {
-    static res = ['/src/bank.png'];
+    static res = ['/assets/bank.png'];
     constructor() {
         super();
         this.update({
@@ -39,7 +39,7 @@ export class Bank extends Entity {
     }
 }
 export class Building extends Entity {
-    static res = ['/src/building2.png', '/src/building_side.png'];
+    static res = ['/assets/building2.png', '/assets/building_side.png'];
     constructor() {
         super();
         this.update({
@@ -52,7 +52,7 @@ export class Building extends Entity {
     }
 }
 export class Tree extends Entity {
-    static res = ['/src/tree.png'];
+    static res = ['/assets/tree.png'];
     constructor() {
         super();
         this.update({
@@ -64,7 +64,7 @@ export class Tree extends Entity {
     }
 }
 export class Fishing extends Entity {
-    static res = ['/src/fishing.png'];
+    static res = ['/assets/fishing.png'];
     constructor() {
         super();
         this.update({
@@ -76,7 +76,7 @@ export class Fishing extends Entity {
     }
 }
 export class Buildings extends Entity {
-    static res = ['/src/buildings.png'];
+    static res = ['/assets/buildings.png'];
     constructor() {
         super();
         this.update({
