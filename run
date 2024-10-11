@@ -1,0 +1,22 @@
+#!/usr/bin/bash
+f=compiled.html
+c=compiled.js
+if [ ${#1} -ne 0 ]; then f="$1"; fi
+esbuild index.ts --bundle --outfile=$c --platform=browser --minify --watch=forever &
+watch=$!
+echo "Watching at $watch, make sure to kill this after exiting"
+while true; do
+    if [ -f "$c" ]; then
+        {
+            echo -n '<!DOCTYPE html><html><head><title>Noble City</title><style>canvas{position:fixed;left:0;top:0;width:100%;height:100%;image-rendering:pixelated;object-fit:contain;box-shadow:0 0 30px #000;background-color:#111}</style></head><body><canvas id="game"></canvas><script>'
+            printf "%s" "$(cat $c)"
+            echo -n '</script></body></html>'
+        } > $f
+        rm $c
+        #echo -e "[\033[1;30m$(date +"%-I:%M:%S %p")\033[0m] Compiled into $f"
+        echo "Compiled into $f"
+    fi
+    sleep 1
+done
+
+trap 'kill $watch' EXIT
