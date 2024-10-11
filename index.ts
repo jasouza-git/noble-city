@@ -1,4 +1,17 @@
 import { NobleCity } from './noblecity';
+import * as Entities from './entities';
+
+let game = new NobleCity('#game');
+game.load(...Entities.list);
+
+// UI
+let ui = new Entities.UI();
+
+let farm = new Entities.Farm();
+
+game.add(farm, ui);
+
+/*
 import { Coin, Factory, Bank, Building, Tree, Fishing, Buildings, Farm } from './entities';
 
 let game = new NobleCity('#game');
@@ -25,4 +38,4 @@ game.draw = (dt:number, t:number) => {
         f:'blue',
         r:[750,-500,800,1200]
     })
-}
+}*/

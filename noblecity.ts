@@ -4,6 +4,8 @@ import { Game, Entity } from './engine';
  * A tycoon game about managing your bussiness
  */
 export class NobleCity extends Game {
+    coins:number = 0;
+    popup:Entity|null = null;
     constructor(dom:HTMLCanvasElement|string='', w=480, h=270) {
         super(dom, w, h, 1);
         this.fps = 0;
@@ -20,12 +22,10 @@ export class NobleCity extends Game {
         let w=this.w, h=this.h, dz=this.mouse.dsy;
         // Zooming effects
         if (dz) {
-            let z = Math.pow(2, -dz/100);
-            z = Math.min(8, this.camera.z*z)/this.camera.z;    // Max zoom in
-            z = Math.max(0.125, this.camera.z*z)/this.camera.z; // Max zoom out
-            this.camera.x += (z-1)*this.mouse.rx; // NOTE! Doesnt work properly
-            this.camera.y += (z-1)*this.mouse.ry; // NOTE! Doesnt work properly
-            this.camera.z *= z;
+            let z = Math.max(0.125, Math.min(8, this.camera.z*Math.pow(2, -dz/100)));
+            this.camera.x = (this.mouse.rx*z+this.w/2-this.mouse.x)/z;
+            this.camera.y = (this.mouse.ry*z+this.h/2-this.mouse.y)/z;
+            this.camera.z = z;
         }
         // Reset dragging delta
         if (this.mouse.db && this.mouse.b&1) {
