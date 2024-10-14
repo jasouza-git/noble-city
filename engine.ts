@@ -1,5 +1,3 @@
-
-
 /**
  * Fundamental rendering object of the engine
  * All default values is located at `camera.def`
@@ -28,7 +26,7 @@
  *   3) Represents a point/line *(if 3d)*
  *   4) Represents a quadratic curve
  *   6) Represents a bezier curve
- * - `crop` - Rectangle image offset relative to "ne"
+ * - `crop` - Rectangle image offset relative to "nw"
  * - `a` - Alpha opacity from 0 *(hidden)* to 1 *(visible)*
  * 
  * **Text**
@@ -130,7 +128,8 @@ export interface sprite {
      */
     p?:number[][],
     /**
-     * Rectangle image offset relative to "ne"
+     * Rectangle image offset relative to "nw"
+     * 
      * [x, y, w, h]
      */
     crop?:number[],
@@ -210,7 +209,7 @@ export class Camera {
     sy:number = 1;
 
     /**
-     * Renders sprites
+     * Default sprites
      */
     def:sprite = {
         bz: 1,
@@ -219,6 +218,9 @@ export class Camera {
      * Camera cursor
      */
     cursor:string = 'default';
+    /**
+     * Renders sprites
+     */
     render(base:sprite={}, ...sprites:sprite[]) {
         let cur = this.cursor;
         for (const sp of sprites) {
@@ -364,6 +366,23 @@ export class Camera {
      */
     clear() {
         this._ctx.clearRect(0, 0, this.w, this.h);
+    }
+
+    /**
+     * Fit to parent
+     */
+    fit = false;
+    fitfull() {
+        let {width, height} = (this.dom.parentElement||this.dom).getBoundingClientRect();
+        let rw = this.w/this.h;
+        let rs = innerWidth/innerHeight;
+        if (rs > rw) {
+            this.dom.style.width = 'auto';
+            this.dom.style.height = '100%';
+        } else {
+            this.dom.style.width = '100%';
+            this.dom.style.height = 'auto';
+        }
     }
 
     /**
@@ -790,7 +809,7 @@ export class Engine {
     /**
      * Current scene, `-1` means not to render
      */
-    scene:number = -1;
+    scene:number = 0;
 
     /**
      * Starts the main loop
@@ -805,9 +824,12 @@ export class Engine {
 
         // Main function
         let n = 0;
-        if (this.scene != -1) for (const cam of this.cameras) {
+        for (const cam of this.cameras) {
             cam.clear();
-            for (const entity of this.scenes[this.scene]) cam.render(...entity.render(dt/1000, d-this._start, this, cam));
+            if (cam.fit) cam.fitfull();
+            if (this.scene in this.scenes)
+                for (const entity of this.scenes[this.scene])
+                    cam.render(...entity.render(dt/1000, d-this._start, this, cam));
             this.loop(dt/1000, d-this._start, cam);
             n++;
         }
