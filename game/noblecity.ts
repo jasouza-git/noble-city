@@ -1,4 +1,4 @@
-import { sprite, Camera, Entity, Input, Engine } from '../engine';
+import { Camera, Engine } from '../engine';
 import { LoadMenu } from '../entity/loadmenu';
 import { UI } from '../entity/ui';
 import { Map, map_obj } from '../entity/map';
@@ -21,6 +21,9 @@ let map_data:map_obj[] = [
     {type:'dirt', x:-1, y:-1, v:true, w:4},
     {type:'dirt', x:-2, y:1, w:4},
     {type:'fishing', x:0, y:0},
+    {type:'grass', x:0, y:2, w:1, h:3},
+    {type:'grass', x:0, y:4, w:1, h:3},
+    {type:'grass', x:0, y:3, w:1, h:3},
 ];
 
 // First Scene : Loading Menu
@@ -63,14 +66,4 @@ game.loop = (dt:number, t:number, cam:Camera) => {
         cam.x = Math.min(200, Math.max(-200, cam.x));
         cam.y = Math.min(200, Math.max(-200, cam.y));
     }
-
-    // Move map
-    /*if ('a' in inp.dkey || 's' in inp.dkey || 'd' in inp.dkey || 'w' in inp.dkey) {
-        if (inp.dkey['a'] == 0) this.mapdat[4].x--;
-        if (inp.dkey['d'] == 0) this.mapdat[4].x++;
-        if (inp.dkey['w'] == 0) this.mapdat[4].y--;
-        if (inp.dkey['s'] == 0) this.mapdat[4].y++;
-        if (inp.dkey['a'] == 2) { this.mapdat[4].x--; this.mapdat[4].w = (this.mapdat[4].w||0)+1; }
-        this.map.generate(this.mapdat);
-    }*/
 };

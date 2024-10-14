@@ -3,29 +3,65 @@
 # Help menu
 if [ ${#@} -eq 0 ]; then
     echo -e '\033[0;34mCompile GGINE game\033[0m'
-    echo -e 'syntax: \033[1;30m./run {game name}\033[0m'
-    echo -e '\033[0;34mspecial actions:\033[0m'
-    echo -e '  - \033[1;30m./run merge\033[0m - Merges the work of chenlin and jason into noblecity'
+    echo -e '  \U2022 \033[1;30mrun {game_name}\033[0m - Compiles a game index code into html'
+    echo -e '  \U2022 \033[1;30mrun -m {game_name} {users}?\033[0m - Merges a game index code'
+    echo -e '  \U2022 \033[1;30mrun -a\033[0m - Sets all permission code project files to 777'
     exit
 fi
 n="$1"
 
 # Merge command
-if [ "$n" == 'merge' ]; then
-    tsj="game/noblecity_jazo.ts"
-    tsc="game/noblecity_chen.ts"
-    tsm="game/noblecity.ts"
-    if [ -f "$tsj" ] && [ -f "$tsc" ]; then
-        diff --line-format %L "$tsj" "$tsc" > "$tsm"
-    else
-        cp -p "$tsm" "$tsj"
-        cp -p "$tsm" "$tsc"
+if [ "$n" == '-m' ]; then
+    if [ ${#@} -lt 2 ]; then
+        echo -e '\033[0;31mInvalid Use:\033[0m Missing game_name'
+        exit 1
     fi
+    if [ ! -f "game/$2.ts" ]; then
+        echo -e "\033[0;31mNo such game:\033[0m $2"
+        exit 1
+    fi
+    m="game/$2.ts"
+    shopt -s nullglob
+    cp -p "$m" "$m.tmp"
+    n=0
+    for u in "game/${2}_"*".ts"; do
+        d=$(mktemp); diff -u "$m" "$u" > "$d"
+        patch "$m.tmp" "$d" >/dev/null
+        rm -f "$d"
+        n=$((n+1))
+    done
+    if [ $n -ne 0 ] && [ -f "$m.tmp.rej" ]; then
+        echo -e '\033[0;31mConflict:\033[0m'
+        cat "$m.tmp.rej"
+    elif [ $n -ne 0 ]; then
+        mv "$m.tmp" "$m"
+        for u in "game/${2}_"*".ts"; do cp -p "$m" "$u"; done
+    elif [ ${#@} -lt 3 ]; then
+        echo -e '\033[0;31mError:\033[0m there is no users, add users'
+    else
+        n="${2}"
+        shift 2
+        for usr in "$@"; do
+            cp -p "game/${n}.ts" "game/${n}_$usr.ts"
+        done
+    fi
+    rm -f "$m.tmp"*
     exit
 fi
 
+# Merge command
+if [ "$n" == '-a' ]; then
+    sudo chmod 777 .
+    exit
+fi
+
+# Watch compile
+if [ ! -f "game/$n.ts" ]; then
+    echo -e "\033[0;31mNo such game:\033[0m $n"
+    exit 1
+fi
 # Esbuild typescript
-esbuild game/$n.ts --bundle --outfile=$n.js --platform=browser --minify --watch=forever &
+{ esbuild game/$n.ts --bundle --outfile=$n.js --platform=browser --minify --watch=forever; } &
 watch=$!
 echo "Watching esbuild at $watch"
 

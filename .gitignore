@@ -1,1 +1,8 @@
+# Compiled html
 *.html
+
+# Compiled js
+*.js
+
+# Instances
+game/*_*.ts
