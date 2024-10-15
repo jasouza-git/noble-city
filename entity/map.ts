@@ -18,8 +18,15 @@ export class Map extends Entity {
         'tile/test.png',
         // Roads
         'road/dirt.png', 'road/dirt_empty.png',
+        'road/cement.png', 'road/cement_empty.png',
         // Buildings
         'building/fishing.png',
+        'building/callereal.png',
+        'building/bank.png',
+        'building/farm.png',
+        'building/factory.png',
+        // Props
+        'prop/tree.png',
         // Background
         'ocean.png',
     ];
@@ -107,7 +114,18 @@ export class Map extends Entity {
                         m: s.v ? [1.33725,-0.071745,-0.24675,1.2205,0,0] : [-1.27025,-0.39275,0,1.2135,0,0],
                     };
                 }
-                console.log(rd);
+            } else if (s.type == 'cement') {
+                for (let n = 0; n < s.w; n++) { let p =`${s.v?s.x:s.x+n}_${s.v?s.y+n:s.y}`;
+                    if (p in rd) rd[p] = {
+                        f: 'road/cement_empty.png',
+                        m: [1.33725,-0.071745,-0.24675,1.2205,0,0],
+                    };
+                    // Can only be placed in grass
+                    else if (p in bg) rd[p] = {
+                        f: 'road/cement.png',
+                        m: s.v ? [1.33725,-0.071745,-0.24675,1.2205,0,0] : [-1.27025,-0.39275,0,1.2135,0,0],
+                    };
+                }
             } else if (s.type == 'fishing') rd[`${s.x}_${s.y}`] = {
                 f: 'building/fishing.png',
                 s: 0.75,
@@ -118,15 +136,65 @@ export class Map extends Entity {
                     [145, 110],
                     [],
                 ],
-                b: 'red',
-                //click: s => game.ui.menu = 2,
-            };
+                click: s => this.eng?.act('building'),
+            }; else if (s.type == 'callereal') rd[`${s.x}_${s.y}`] = {
+                f: 'building/callereal.png',
+                p: [
+                    [-85, -140],
+                    [],
+                    [185, 160],
+                    [],
+                ],
+                m: [1,0,0,1,0,-60],
+                click: s => this.eng?.act('building'),
+            }; else if (s.type == 'bank') rd [`${s.x}_${s.y}`] = {
+                f: 'building/bank.png',
+                p: [
+                    [-62, -100],
+                    [],
+                    [133, 130],
+                    [],
+                ],
+                m: [1,0,0,1,4,-32],
+                click: s => this.eng?.act('building'),
+            }; else if (s.type == 'farm') rd [`${s.x}_${s.y}`] = {
+                f: 'building/farm.png',
+                p: [
+                    [-62, -100],
+                    [],
+                    [133, 130],
+                    [],
+                ],
+                click: s => this.eng?.act('building'),
+            }; else if (s.type == 'factory') rd [`${s.x}_${s.y}`] = {
+                f: 'building/factory.png',
+                p: [
+                    [-62, -100],
+                    [],
+                    [133, 130],
+                    [],
+                ],
+                s: 0.5,
+                m: [1,0,0,1,0,-50],
+                click: s => this.eng?.act('building'),
+            }; else if (s.type == 'tree') rd [`${s.x}_${s.y}`] = {
+                f: 'prop/tree.png',
+                p: [
+                    [-62, -100],
+                    [],
+                    [133, 130],
+                    [],
+                ],
+                s: 0.08,
+            }; else {
+                this.eng?.error_add(new Error(`Unknown type "${s.type}`));
+            }
         }
         // Parsing data into map info
         for (const b in bg) {
             let p = b.split('_').map(x=>Number(x));
             Object.assign(bg[b], this.tile(p[0], p[1]));
-            if (bg[b].data.pre) bg[b].f = `tile/${bg[b].data.top || bg[b].data.pre}_0.png`;
+            if (bg[b].data?.pre) bg[b].f = `tile/${bg[b].data.top || bg[b].data.pre}_0.png`;
             /*let s = typeof bg[b].data == 'string';
             let p = b.split('_').map(x=>Number(x));
             if (!s) Object.assign(bg[b], {f:'tile/test.png', a:0.5})
@@ -141,7 +209,6 @@ export class Map extends Entity {
         }
         this.bg = bg;
         this.rd = rd;
-        console.log(this.rd);
         /*
         // Cleanup
         for (const bg of this.bg) {
@@ -160,7 +227,7 @@ export class Map extends Entity {
         
     }
     init:boolean = true;
-    render(dt:number, t:number, game:Engine, cam:Camera):sprite[] {
+    render(dt:number, t:number, cam:Camera):sprite[] {
         cam.tile({f:'ocean.png', s:1});
         /*if (this.init) {
             game.debug.m = [0.26139,0.4746,-2.4687,-0.27096,0,0];
@@ -169,15 +236,17 @@ export class Map extends Entity {
         }
         game.debug.mp(dt);
         this.bg['0_2'].m = game.debug.m;*/
-        return [ {},
+        return [ {hover: s=>{
+                if (s.click && this.eng?.act('onmap?')) s.cur = 'pointer';
+            }},
             // Background
             ...Object.values(this.bg),
             ...Object.values(this.rd),
-            /*{
+            {
                 f: 'tile/test.png',
-                ...this.tile(0,2),
+                ...this.tile(-1,0),
                 a: 0.5,
-            },
+            },/*
             this.bg['0_2'],*/
         ]
     }

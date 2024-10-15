@@ -4,8 +4,10 @@ export class LoadMenu extends Entity {
     /**
      * Percentage from 0 to 1
      */
-    per:number = 0.5;
-    render(dt:number, t:number, game:Engine, cam:Camera):sprite[] {
+    per:number = 0;
+    render(dt:number, t:number, cam:Camera):sprite[] {
+        if (this.eng == null) return [];
+        console.log(this.per);
         return [ {c:0}, 
             { // Loading bar border
                 p: [[-100, -10],[],[200, 20],[],],
@@ -29,7 +31,7 @@ export class LoadMenu extends Entity {
             },
             { // Error Message
                 a: this.per < 0 ? 0.75 : 0,
-                t: `failed: ${game.load_err[game.load_err.length-1]}`,
+                t: `failed: ${this.eng.load_err[this.eng.load_err.length-1]}`,
                 tz: 15,
                 f: 'red',
                 x: cam.w/2,

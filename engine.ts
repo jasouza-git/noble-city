@@ -40,6 +40,8 @@
  * 
  * **System**
  * - `cur` - Sets mouse cursor
+ * - `aud` - Sets audio
+ * - `vol` - Audio volume from 0 *(mute)* to 1 *(full volume)*
  * 
  * **Events** *(requires points `p`)*
  * - `click` - Mouse clicked on it 
@@ -156,13 +158,21 @@ export interface sprite {
     /**
      * Custom Data
      */
-    data?:any,
+    data?:{[index:string]:any},
     /**
      * Sets mouse cursor
      * 
      * [Cursor reference](https://developer.mozilla.org/en-US/docs/Web/CSS/cursor)
      */
     cur?:string,
+    /**
+     * Sets audio
+     */
+    aud?:string,
+    /**
+     * Audio volume from 0 *(mute)* to 1 *(full volume)*
+     */
+    vol?:number,
     /**
      * Mouse clicked on it *(requires points `p`)*
      */
@@ -173,15 +183,29 @@ export interface sprite {
     hover?:(s:sprite)=>void,
 };
 /**
- * Camera responsible for rendering the environment
+ * Camera responsible for rendering the scene
+ * - `x` - X Position of camera
+ * - `y` - Y position of camera
+ * - `w` - Width of canvas
+ * - `h` - Height of canvas
+ * - `sx` - Horizontal scale *(set `s` to set both)*
+ * - `sy` - Vertical scale *(set `s` to set both)*
+ * - `def` - Default sprite template
+ * - `cursor` - Default camera cursor
+ * - `render(base,...sprites)` - Renders sprite
+ * - `clear()` - Clears camera
+ * - `fit` - Fit to parent automatically?
+ * - `fitfull()` - Fit to parent
+ * - `tile(sprite)` - Titles the canvas infinitely using only one sprite
+ * - `dom` - Camera canvas dom element
  */
 export class Camera {
     /**
-     * X position
+     * X Position of camera
      */
     x:number = 0;
     /**
-     * Y position
+     * Y position of camera
      */
     y:number = 0;
 
@@ -199,30 +223,33 @@ export class Camera {
      * Scale of canvas
      */
     set s(v:number) {
-        //this._ctx.scale(v/this.sx, v/this.sy);
-        /*this.dom.width = this.dom.width*v;
-        this.dom.height = this.dom.height*v;*/
         this.sx = v;
         this.sy = v;
     }
+    /**
+     * Horizontal scale *(set `s` to set both)*
+     */
     sx:number = 1;
+    /**
+     * Vertical scale *(set `s` to set both)*
+     */
     sy:number = 1;
 
     /**
-     * Default sprites
+     * Default sprite template
      */
     def:sprite = {
         bz: 1,
     };
     /**
-     * Camera cursor
+     * Default camera cursor
      */
     cursor:string = 'default';
     /**
      * Renders sprites
      */
     render(base:sprite={}, ...sprites:sprite[]) {
-        let cur = this.cursor;
+        let eng = this._eng;
         for (const sp of sprites) {
             this._ctx.save();
 
@@ -232,16 +259,22 @@ export class Camera {
             let val = (...a:any[]) => a.filter(x=>x!=undefined)[0];
 
             // Event
-            let inp = this._eng.inp;
+            let inp = eng.inp;
             if ((s.click || s.hover) && s.p != undefined && inp.over(s.p, [s.x||0,s.y||0], s.c)) {
                 if (s.hover) s.hover(s);
                 if (inp.click() && s.click) s.click(s);
             }
-            if (s.cur) cur = s.cur;
+            if (s.cur) this.cursor = s.cur;
+
+            // Music
+            if (s.aud && s.aud in eng.audios) {
+                eng.audios[s.aud].active = true;
+                eng.audios[s.aud].volume = val(s.vol, this.def.vol, 1);
+            }
 
             // Conditions
-            let cf:boolean = s.f != undefined && !(s.f in this._eng.imgs); // Color fill?
-            let cb:boolean = s.b != undefined && !(s.b in this._eng.imgs); // Color stroke?
+            let cf:boolean = s.f != undefined && !(s.f in eng.imgs); // Color fill?
+            let cb:boolean = s.b != undefined && !(s.b in eng.imgs); // Color stroke?
             let cc:boolean = s.crop != undefined && s.crop.length == 4;     // Valid rectangle
             
             // Fill and Stroke
@@ -273,7 +306,7 @@ export class Camera {
             this._ctx.transform(sx*rc,sx*rs,-sy*rs, sy*rc,  this.w/2*c*Math.pow(this.sx, c-1)+this.x*(1-c-csx)+(s.x||0)*csx,
                                                             this.h/2*c*Math.pow(this.sy, c-1)+this.y*(1-c-csy)+(s.y||0)*csy);
             if (s.m && s.m.length == 6) this._ctx.transform.apply(this._ctx, s.m);
-            else if (s.m) this._eng.error_add(new Error(`Invalid transform [${s.m.toString()}]`))
+            else if (s.m) eng.error_add(new Error(`Invalid transform [${s.m.toString()}]`))
             
             // Origin
             this._ctx.textAlign = 'left';
@@ -281,33 +314,33 @@ export class Camera {
             let op = [0,0]; // Offset Position
             if (!s.o || !s.o.includes('w') && !s.o.includes('e')) { // Horizontal centering
                 if (s.crop && cc) op[0] -= s.crop[2]/2;
-                else if(s.f && !cf) op[0] -= this._eng.imgs[s.f].width/2;
+                else if(s.f && !cf) op[0] -= eng.imgs[s.f].width/2;
                 this._ctx.textAlign = 'center';
             }
             if (!s.o || !s.o.includes('n') && !s.o.includes('s')) { // Vertical centering
                 if (s.crop && cc) op[1] -= s.crop[3]/2;
-                else if(s.f && !cf) op[1] -= this._eng.imgs[s.f].height/2;
+                else if(s.f && !cf) op[1] -= eng.imgs[s.f].height/2;
                 this._ctx.textBaseline = 'middle';
             }
             if (s.o && s.o.includes('e')) { // Horizontal align to end
                 if (s.crop && cc) op[0] -= s.crop[2];
-                else if (s.f && !cf) op[0] -= this._eng.imgs[s.f].width;
+                else if (s.f && !cf) op[0] -= eng.imgs[s.f].width;
                 this._ctx.textAlign = 'end';
             }
             if (s.o && s.o.includes('s')) { // Vertical align to end
                 if (s.crop && cc) op[1] -= s.crop[3];
-                else if (s.f && !cf) op[1] -= this._eng.imgs[s.f].width;
+                else if (s.f && !cf) op[1] -= eng.imgs[s.f].width;
                 this._ctx.textBaseline = 'bottom';
             }
             this._ctx.translate(op[0], op[1]);
 
             // Image
-            if (s.f != undefined && s.f in this._eng.imgs) {
-                if (s.crop && cc) this._ctx.drawImage(this._eng.imgs[s.f], s.crop[0], s.crop[1], s.crop[2], s.crop[3], 0, 0, s.crop[2], s.crop[3]);
-                else              this._ctx.drawImage(this._eng.imgs[s.f], 0, 0);
+            if (s.f != undefined && s.f in eng.imgs) {
+                if (s.crop && cc) this._ctx.drawImage(eng.imgs[s.f], s.crop[0], s.crop[1], s.crop[2], s.crop[3], 0, 0, s.crop[2], s.crop[3]);
+                else              this._ctx.drawImage(eng.imgs[s.f], 0, 0);
                 if (cb && s.p == undefined) {
                     if (s.crop && cc) this._ctx.strokeRect(0, 0, s.crop[2], s.crop[3]);
-                    else              this._ctx.strokeRect(0, 0, this._eng.imgs[s.f].width, this._eng.imgs[s.f].height);
+                    else              this._ctx.strokeRect(0, 0, eng.imgs[s.f].width, eng.imgs[s.f].height);
                 }
             }
 
@@ -349,8 +382,8 @@ export class Camera {
             }
 
             // Text
-            if (s.t) {
-                this._ctx.font = `${s.tz != undefined ? s.tz : 20}px ${s.tf != undefined ? s.tf : 'Arial'}`;
+            if (s.t) { //s.tf != undefined ? s.tf in this._eng.font ? this._eng.font[s.tf] : s.tf : 'Arial'
+                this._ctx.font = `${s.tz != undefined ? s.tz : 20}px ${val(s.tf == undefined ? undefined : eng.fonts[s.tf], s.tf, this.def.tf, 'Arial')}`;
                 if (!cf) this._ctx.fillStyle = '#000';
                 if (!cf && !cb || cf) this._ctx.fillText(s.t, 0, 0);
                 if (cb) this._ctx.strokeText(s.t, 0, 0);
@@ -359,7 +392,6 @@ export class Camera {
             // Restore
             this._ctx.restore();
         }
-        this.dom.style.cursor = cur;
     }
     /**
      * Clears scene
@@ -369,13 +401,16 @@ export class Camera {
     }
 
     /**
-     * Fit to parent
+     * Fit to parent automatically?
      */
     fit = false;
+    /**
+     * Fit to parent
+     */
     fitfull() {
         let {width, height} = (this.dom.parentElement||this.dom).getBoundingClientRect();
         let rw = this.w/this.h;
-        let rs = innerWidth/innerHeight;
+        let rs = width/height;
         if (rs > rw) {
             this.dom.style.width = 'auto';
             this.dom.style.height = '100%';
@@ -408,6 +443,7 @@ export class Camera {
      */
     dom:HTMLCanvasElement;
     /* MAIN */
+    scene:Scene|null = null;
     private _ctx:CanvasRenderingContext2D;
     private _eng:Engine;
     constructor(dom:HTMLCanvasElement|string='', eng:Engine, w=640, h=360) {
@@ -432,14 +468,28 @@ export class Camera {
  * - `b` - Button being pressed (bits 1-3)
  * - `sx` - Scrolled X distance
  * - `sy` - Scrolled Y distance
- * - `d*` - Gets the changed value since last frame *(delta)*
  * - `g*` - Gets the changed value since mouse down *(dragged)*
  * - `cb(n,x)` - Returns true if boolean at `n` is `x` for button `b`
+ * 
+ * **Keyboard**
+ * - `key` - Dictionary of currently pressed key and what its pressed with in a bit field
+ *   1. CTRL Key
+ *   2. Shift Key
+ *   3. Alt Key
+ * 
+ * **Shortcuts**
+ * - `d*` - Gets the changed value since last frame *(delta)*
+ * - `click(treshold)` - Checks if the user clicked the mouse *(after mouse up)*
+ * - `over(poly,pos,c)` - Checks if the mouse is over a polygon
+ * - `in(...rects)` - Checks if the mouse is over some rectangles *(use `rin` for relative rectangles)*
+ * 
  * **Methods**
  * - `handle(event)` - Deals with events
- * - `listen(dom)` - Listens for events at `dom`
+ * - `bind(dom)` - Binds a camera to
+ * - `reset()` - Resets delta changes
  */
 export class Input {
+    /* ----- MOUSE ----- */
     /**
      *  X position relative to canvas
      */
@@ -548,8 +598,8 @@ export class Input {
      */
     over(poly:number[][], pos:number[]=[0,0], cval?:number):boolean {
         let c = cval != undefined ? cval : this._cam.def.c != undefined ? this._cam.def.c : 1;
-        let rx = (this.x-this._cam.w/2*c+this._cam.x*c)*Math.pow(this._cam.sx, -c)-pos[0];
-        let ry = (this.y-this._cam.h/2*c+this._cam.y*c)*Math.pow(this._cam.sy, -c)-pos[1];
+        let rx = (this.x-this._cam.w/2*c+this._cam.x*c*this._cam.sx)*Math.pow(this._cam.sx, -c)-pos[0];
+        let ry = (this.y-this._cam.h/2*c+this._cam.y*c*this._cam.sy)*Math.pow(this._cam.sy, -c)-pos[1];
         let sec = false;
         for (let i=0, j=poly.length-1; i<poly.length; j=i++) {
             let p2 = poly[i].length == 2 && poly[j].length == 2;
@@ -590,7 +640,7 @@ export class Input {
     }
 
     /**
-     * Keys in binary map, bits:
+     * Dictionary of currently pressed key and what its pressed with in a bit field
      * 1. CTRL Key
      * 2. Shift Key
      * 3. Alt Key
@@ -668,6 +718,9 @@ export class Input {
 }
 /**
  * Entity class in Engine environment
+ * - `res` - Resources to be loaded before the entity can be used
+ * - `render(dt,t,cam)` - Renders an entity
+ * - `eng` - Engine it is currently on
  */
 export class Entity {
     /**
@@ -683,72 +736,263 @@ export class Entity {
      * @param cam {Camera} The camera being rendered to
      * @returns {sprite[]} Sprites to render
      */
-    render(dt:number, t:number, game:Engine, cam:Camera):sprite[] {
+    render(dt:number, t:number, cam:Camera):sprite[] {
         return [];
     }
 
     /* MAIN */
+    /**
+     * Game engine it is loaded into
+     */
+    eng:Engine|null = null;
+    /**
+     * Scene it is loaded into
+     */
+    scene:Scene|null = null;
     constructor(...x:any[]) {}
 }
 /**
+ * Scene of entities
+ * - `entities` - Entities at the scene
+ * - `add(...x)` - Adds entities into the scene
+ * - `remove(...x)` - Removes enitities from the scene
+ * - `show(cam)` - Shows scene to camera, blank for first camera
+ */
+export class Scene {
+    /**
+     * Entities at the scene
+     */
+    entities:Entity[] = [];
+    /**
+     * Adds entities
+     */
+    add(...entities:Entity[]) {
+        for (const entity of entities) {
+            entity.eng = this.eng;
+            this.entities.push(entity);
+        }
+    }
+    /**
+     * Removes entities
+     */
+    remove(...entities:Entity[]) {
+        for (let n = 0; n < this.entities.length; n++) {
+            if (entities.includes(this.entities[n])) {
+                this.entities.slice(n,1);
+                n--;
+            }
+        }
+    }
+    /**
+     * Shows the scene
+     */
+    show(cam?:Camera) { // TODO! allow transition scenes
+        if (cam) cam.scene = this;
+        else if (this.eng.cameras.length) this.eng.cameras[0].scene = this;
+    }
+    /**
+     * Engine
+     */
+    eng:Engine;
+    constructor(eng:Engine, ...entities:Entity[]) {
+        this.eng = eng;
+        this.add(...entities);
+    }
+}
+/**
  * Engine responsible for processing the whole game and its components
+ * 
+ * **Caches**
+ * - `imgs` - Images
+ * - `fonts` - Fonts
+ * - `audios` - Audios
+ * 
+ * **Loading**
+ * - `base` - Base directory where all resources will be loaded from
+ * - `load` - Loads entities' resources so they can be rendered
+ * - `load_res` - Loads resources into cache
+ * 
+ * **Errors**
+ * - `errors` - Engine errors
+ * - `load_err` - Loading Errors *(files that failed to load)*
+ * - `error_add` - Reports an error if not a duplicate error
+ * 
+ * **Components**
+ * - `cameras` - All cameras
+ * - `input` - Hardware inputs
+ * 
+ * **Debugging**
+ * - `mp` - Control system to play around with the `sprite.m` values
+ * - `m` - Resulting `sprite.m` array
+ * 
+ * **Rendering**
+ * - `fps` - Current rendering fps, set value to set limit
+ * - `scenes` - Engine game scenes
+ * - `scene` - Current scene it is rendering
+ * - `start_loop` - Starts main loop *(automatic in constructor)*
+ * 
+ * **Customized**
+ * - `loop` - Function that runs every frame
+ * - `act` - Function triggered by entity actions *(acts has the API between entities)*
  */
 export class Engine {
+    /* ----- CACHES ----- */
     /**
      * Images cache
      */
     imgs:{[index:string]:HTMLImageElement} = {};
     /**
-     * Loads file into cache
-     * @param state Function to call for each loaded update
-     * @param files Files to load
+     * Font cache
      */
-    load_res(state:(loaded:number,toload:number)=>void, ...files:string[]) {
-        let loaded = 0;
-        state(0, files.length);
-        for (const file of files) {
-            let img = new Image();
-            img.onload = () => state(loaded == -1 ? -1 : ++loaded, files.length);
-            img.onerror = () => {
-                loaded = -1;
-                this.load_err.push(this.base+file);
-                state(-1, files.length);
-            };
-            img.src = this.base+file;
-            this.imgs[file] = img;
-        }
-    };
-    load_err:string[] = [];
+    fonts:{[index:string]:string} = {};
+    /**
+     * Audio cache
+     */
+    audios:{[index:string]:HTMLAudioElement&{active?:boolean}} = {};
     
-    // ERRORS
-    errors:Error[] = [];
-    error_add(err:Error) {
-        for (const e of this.errors) if(e.message == err.message) return;
-        this.errors.push(err);
-        console.log(err);
-    }
-
+    /* ----- LOADING SYSTEM ----- */
+    /**
+     * Base directory where all resources will be loaded from, in this syntax:
+     * 
+     * `{base}{file}`
+     */
     base:string = '';
     /**
-     * Load entities
+     * Loads entities' resources so they can be rendered
+     * @param state Function to call for each loaded update
+     * @param entities Entities to load
      */
-    load(state:(loaded:number,toload:number)=>void, ...entities:typeof Entity[]) {
+    load(state:(percent:number)=>void, ...entities:typeof Entity[]):void {
         let toload:string[] = [];
         for (const entity of entities) toload.push(...entity.res);
         this.load_res(state, ...toload)
     }
     /**
+     * Loads resources into cache
+     * @param state Function to call for each loaded update
+     * @param files Files to load
+     */
+    load_res(state:(percent:number)=>void, ...files:string[]):void {
+        let loads:number[][] = []; // (loaded, toload)
+        let failed = false;
+        let update = (val:number, num:number) => {
+            if (val == -1) {
+                this.load_err.push(this.base+files[num]);
+                failed = true;
+            }
+            loads[num][0] = val;
+            state(failed ? -1 : loads.map(x=>x[0]/x[1]).reduce((a,b)=>a+b)/loads.length);
+        };
+
+        let n = 0;
+        for (const file of files) {
+            let ext = file.split('.').reverse()[0].toLowerCase();
+            if (['png','jpg','jpeg'].includes(ext)) {
+                loads.push([0,1]);
+                let img = new Image();
+                let k = n;
+                img.onload = () => update(1,k);
+                img.onerror = () => update(-1,k);
+                img.src = this.base+file;
+                this.imgs[file] = img;
+            } else if (['ttf','mp3','wav'].includes(ext)) {
+                loads.push([0,5]);
+                let k = n;
+                let h = new XMLHttpRequest();
+                h.open('GET', this.base+file);
+                h.responseType = 'blob';
+                h.onreadystatechange = () => {
+                    // Loaded amount
+                    update(h.readyState, k);
+                    // Failed to load file
+                    if (h.readyState == 4 && h.status != 200) return update(-1,k);
+                    // Not finished, continue
+                    if (h.readyState != 4 || h.status != 200) return;
+                    // Font loaded
+                    if (ext == 'ttf') {
+                        let n = this.fonts[file] = `font_${Object.keys(this.fonts).length}`;
+                        // Force font render
+                        let d:HTMLHeadElement = document.createElement('h1');
+                        d.style.font = `20px ${n}`;
+                        d.innerHTML = n;
+                        d.style.position = 'fixed';
+                        d.style.left = '0';
+                        d.style.top = '100%';
+                        // Load font into font family
+                        let s:HTMLStyleElement = document.createElement('style');
+                        s.innerHTML += `@font-face {font-family:"${n}";src:url("${URL.createObjectURL(h.response)}") format("truetype");}`;
+                        document.head.appendChild(s);
+                        document.body.appendChild(d);
+                        // Wait for body to render it
+                        let check = (a:number) => {
+                            // Check if page loaded font
+                            if (document.fonts.check(`20px ${n}`)) update(5,k);
+                            // Too many failed attempts
+                            else if (a > 1000) update(-1,k);
+                            // Wait again later
+                            else setTimeout(check, 10, a+1);
+                        };
+                        check(0);
+                    } if (['mp3','wav'].includes(ext)) {
+                        this.audios[file] = new Audio();
+                        let a = this.audios[file];
+                        a.active = false;
+                        a.src = URL.createObjectURL(h.response);
+                        a.volume = 0;
+                        a.addEventListener('ended', ()=>{
+                            a.currentTime = 0;
+                            a.play();
+                        });
+                        update(5, k);
+                    } else update(5, k);
+                };
+                h.send();
+            } else {
+                // Unknown file type
+                loads.push([0,1]);
+                this.error_add(new Error(`Unknown file type "${ext}"`))
+                update(-1,n);
+            }
+            n++;
+        }
+        if (!failed) state(0);
+    };
+
+    /* ----- ERROR SYSTEM ----- */
+    /**
+     * Engine Errors
+     */
+    errors:Error[] = [];
+    /**
+     * Loading Errors *(files that failed to load)*
+     */
+    load_err:string[] = [];
+    /**
+     * Reports an error if not a duplicate error
+     * @param err Error that occured
+     */
+    error_add(err:Error):void {
+        for (const e of this.errors) if(e.message == err.message) return;
+        this.errors.push(err);
+        console.log(err);
+    }
+
+    /* ----- COMPONENT SYSTEM ----- */
+    /**
      * Cameras
      */
     cameras:Camera[] = [];
     /**
-     * Inputs
+     * Engine Input
      */
     inp:Input;
 
+    /* ----- DEBUGING SYSTEM ----- */
     /**
-     * Useful for debugging
-    */
+     * Tools useful for debugging
+     * 
+     * Note: must not be included in final version
+     */
     debug:{m:number[], _m:number[], mp:(dt:number)=>void} = {
         /**
          * Matrix tranform
@@ -757,8 +1001,9 @@ export class Engine {
         _m: [1,0,0,1,0,0],
         /**
          * Matrix play
+         * @param dt {number} Delta-time
          */
-        mp: (dt:number) =>{
+        mp: (dt:number):void =>{
             if (this.inp.key['a'] != undefined) this.debug.m[0] -= dt*(this.inp.key['a'] == 0 ? 1 : this.inp.key['a']&2 ? 0.25 : 0);
             if (this.inp.key['d'] != undefined) this.debug.m[0] += dt*(this.inp.key['d'] == 0 ? 1 : this.inp.key['d']&2 ? 0.25 : 0);
             if (this.inp.key['q'] != undefined) this.debug.m[1] -= dt*(this.inp.key['q'] == 0 ? 1 : this.inp.key['q']&2 ? 0.25 : 0);
@@ -793,7 +1038,7 @@ export class Engine {
         }
     };
 
-    /* RENDERING */
+    /* ----- RENDERING SYSTEM ----- */
     private _wait:number = 0;
     private _times:DOMHighResTimeStamp[] = [];
     private _start:DOMHighResTimeStamp;
@@ -805,14 +1050,9 @@ export class Engine {
     /**
      * Scenes of entities
      */
-    scenes:Entity[][] = [];
+    scene:Scene|null = null;
     /**
-     * Current scene, `-1` means not to render
-     */
-    scene:number = 0;
-
-    /**
-     * Starts the main loop
+     * Starts the main loop `Engine.loop`
      */
     start_loop(init=true) {
         // Timing system (Delta-time, and FPS)
@@ -822,27 +1062,52 @@ export class Engine {
         this._times.push(d);
         if (init) this._start = d;
 
+        // Restart state of audio
+        for (const aud in this.audios) this.audios[aud].active = false;
+
         // Main function
         let n = 0;
         for (const cam of this.cameras) {
+            cam.cursor = 'default';
             cam.clear();
             if (cam.fit) cam.fitfull();
-            if (this.scene in this.scenes)
-                for (const entity of this.scenes[this.scene])
-                    cam.render(...entity.render(dt/1000, d-this._start, this, cam));
+            if (cam.scene != null)
+                for (const entity of cam.scene.entities)
+                    cam.render(...entity.render(dt/1000, d-this._start, cam));
+            /*if (this.scene != null)
+                for (const entity of this.scene.entities)
+                    cam.render(...entity.render(dt/1000, d-this._start, cam));*/
+            cam.dom.style.cursor = cam.cursor;
             this.loop(dt/1000, d-this._start, cam);
             n++;
         }
 
+        // Pause/play audio depending on activity
+        for (const aud in this.audios) {
+            let a = this.audios[aud];
+            if (a.active && a.paused) a.play();
+            else if (!a.active && !a.paused) a.pause();
+            console.log(a.paused);
+        }
+
         // Interval
         this.inp.reset();
-        //for (const inp of this.ins) inp.reset();
         setTimeout(()=>this.start_loop(false), this._wait-dt > 0 ? this._wait-dt : 0);
     }
+
+    /* ----- CUSTOMIZABLE SYSTEM ----- */
     /**
      * Customizable loop
      */
     loop:(dt:number, t:number, cam:Camera)=>void = ()=>{};
+    /**
+     * Customizable action triggered by an entity
+     */
+    act:(act:string, ...x:any[])=>any = ()=>{};
+
     /* MAIN */
-    constructor() { this.inp = new Input(this); this.start_loop(); }
+    constructor() {
+        this.inp = new Input(this);
+        this.start_loop();
+    }
 }

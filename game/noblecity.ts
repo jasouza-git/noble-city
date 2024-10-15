@@ -1,4 +1,4 @@
-import { Camera, Engine } from '../engine';
+import { Camera, Engine, Scene } from '../engine';
 import { LoadMenu } from '../entity/loadmenu';
 import { UI } from '../entity/ui';
 import { Map, map_obj } from '../entity/map';
@@ -8,38 +8,50 @@ let game = new Engine;
 game.base = '/assets/';
 let cam = new Camera('#game', game);
 cam.fit = true; // Make it fullscreen
+cam.s = 2;//0.25;
+cam.y = 0;
+cam.x = -150;
 
 // Game Map
 let map_data:map_obj[] = [
-    {type:'sand', x:-2, y:-2, w:4, h:4},
-    {type:'grass', x:-2, y:-2, w:4, h:4},
-    {type:'sand', x:2, y:1, w:2, h: 2},
-    {type:'grass', x:2, y:1, w:2, h: 2},
-    {type:'sand', x:-1, y:1, h:3},
-    {type:'grass', x:-1, y:2, w:1, h:3},
-    {type:'grass', x:1, y:1},
-    {type:'dirt', x:-1, y:-1, v:true, w:4},
-    {type:'dirt', x:-2, y:1, w:4},
-    {type:'fishing', x:0, y:0},
-    {type:'grass', x:0, y:2, w:1, h:3},
-    {type:'grass', x:0, y:4, w:1, h:3},
-    {type:'grass', x:0, y:3, w:1, h:3},
+    {type:'sand', x:-10, y:-10, w:20, h:20},
+    {type:'grass',x:-9, y:-9, w:18, h:18},
+    {type:'fishing', x:7, y:9},
+    {type:'dirt',x:3,y:-8,w:16,v:true},
+    {type:'cement',x:-8,y:1,w:16},
+    {type:'bank',x:2,y:0},
+    {type:'tree',x:1.6,y:0},
+    {type:'callereal', x:0, y:0},
+    {type:'farm',x:-1,y:0},
+    {type:'factory',x:-3,y:0},
 ];
+for (let y = 0; y < 10; y++)
+    for (let x = 0; x < 10; x++)
+        map_data.push({type:'tree',x:-8+x*0.5+(Math.random()-0.5),y:-8+y*0.5+(Math.random()-0.5)});
 
 // First Scene : Loading Menu
-let loading = new LoadMenu();
-game.scenes.push([loading]);
+let loadmenu = new LoadMenu();
+let loading = new Scene(game, loadmenu);
+loading.show(cam);
 
 // Second Scene : Main game
-let map = new Map();
+let map = new Map(game);
 map.generate(map_data);
 let ui = new UI();
-game.scenes.push([map, ui]);
+ui.menu = 1;
+let mainscene = new Scene(game, map, ui);
+
+// Actions
+game.act = (act,...x) => {
+    if (act == 'building') {
+        if (ui.menu == 1) ui.menu = 2;
+    } else if (act == 'onmap?') return ui.menu == 1;
+}
 
 // Load assets
-game.load((a,b) => {
-    loading.per = a/b;
-    if (a/b == 1) game.scene = 1;
+game.load(p => {
+    loadmenu.per = p;
+    if (p == 1) mainscene.show();
 }, UI, Map);
 
 // Main loop
@@ -49,21 +61,21 @@ game.loop = (dt:number, t:number, cam:Camera) => {
 
     // Zooming effects
     if (inp.dsy) {
-        let z = Math.max(0.125, Math.min(8, cam.sx*Math.pow(2, -inp.dsy/100)));
-        cam.x = (inp.rx*z/cam.sx+cam.w/2-inp.x)/z;
-        cam.y = (inp.ry*z/cam.sy+cam.h/2-inp.y)/z;
+        let z = Math.max(0.25, Math.min(8, cam.sx*Math.pow(2, -inp.dsy/100)));
+        //cam.x = (inp.rx*z/cam.sx+cam.w/2-inp.x)/z;
+        //cam.y = (inp.ry*z/cam.sy+cam.h/2-inp.y)/z;
         cam.s = z;
     }
-    // Reset dragging delta
-    if (inp.cb(1)) {
-        inp.dx = 0;
-        inp.dy = 0;
-    }
     // Dragging effects
-    if (inp.b&1) {
-        cam.x -= inp.dx/cam.sx;
-        cam.y -= inp.dy/cam.sy;
-        cam.x = Math.min(200, Math.max(-200, cam.x));
-        cam.y = Math.min(200, Math.max(-200, cam.y));
+    if (ui.menu == 1) {
+        inp.cb(1) && inp.dx && inp.dy; // Reset delta
+        if (inp.b&1) {
+            cam.x -= inp.dx/cam.sx;
+            cam.y -= inp.dy/cam.sy;
+            let rx = 1300*Math.min(1,cam.sx);
+            let ry = 600*Math.min(1,cam.sy);
+            cam.x = Math.min(rx, Math.max(-rx, cam.x));
+            cam.y = Math.min(ry, Math.max(-ry, cam.y));
+        }
     }
 };

@@ -41,8 +41,8 @@ e.loop = () => {
     r.x = e.inp.rx;
 };
 
-e.load_res((a,b)=>{
-    if (a/b == 1) {
+e.load_res(p=>{
+    if (p == 1) {
         r.color = 'coins.png';
-    } else if (a == -1) r.color = 'yellow';
+    } else if (p == -1) r.color = 'yellow';
 }, 'coins.png');
