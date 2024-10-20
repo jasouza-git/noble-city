@@ -1,84 +1,85 @@
 import { sprite, Camera, Entity, Engine } from '../engine';
+// Buildings
+import { Building } from './building';
+import { Bank } from './building/bank';
+import { Blank } from './building/blank';
+import { CalleReal } from './building/callereal';
+import { Factory } from './building/factory';
+import { Farm } from './building/farm';
+import { Fishing } from './building/fishing';
 
+export { Building };
 export interface map_obj {
+    /**
+     * Type of Object
+     */
     type:string,
+    /**
+     * X Position
+     */
     x:number,
+    /**
+     * Y Position
+     */
     y:number,
+    /**
+     * Width
+     */
     w?:number,
+    /**
+     * Height
+     */
     h?:number,
-    v?:boolean
+    /**
+     * Vertical direction?
+     */
+    v?:boolean,
+    /**
+     * Colors for dynamic coloring system
+     */
+    color?:string[],
 }
 export class Map extends Entity {
     static res = [
         'tile/grass_0.png',
         'tile/sand_0.png', 'tile/sand1.png',
-        'tile/water.png',
+        'tile/water_0.png', 'tile/water_1.png',
         'tile/ws_x_0.png', 'tile/ws_y_0.png', 'tile/ws_xy_0.png', 'tile/ws__0.png',
-        'tile/ws_x_1.png', 'tile/ws_y_1.png', 'tile/ws_xy_1.png',
+        'tile/ws_x_1.png', 'tile/ws_y_1.png', 'tile/ws_xy_1.png', 'tile/ws__1.png',
         'tile/test.png',
         // Roads
         'road/dirt.png', 'road/dirt_empty.png',
         'road/cement.png', 'road/cement_empty.png',
-        // Buildings
-        'building/fishing.png',
-        'building/callereal.png',
-        'building/bank.png',
-        'building/farm.png',
-        'building/factory.png',
         // Props
         'prop/tree.png',
         // Background
-        'ocean.png',
+        'tile/water_bg_0.png', 'tile/water_bg_1.png',
+        // For buildings
+        'ui/pin.png',
     ];
-    bg:{[index:string]:sprite} = {}; // Background
-    rd:{[index:string]:sprite} = {}; // Roads
-    bd:{[index:string]:sprite} = {}; // Buildings
-    
+    static depend = [Factory, Fishing, CalleReal, Bank, Farm, Blank];
+    ly:{[index:string]:sprite}[] = [{},{}]; // 2 Layers: Background, Foreground
+    bd:{[index:string]:Building} = {}; // Buildings
+
     tile(x,y) {
         return {x:x*72+y*64, y:y*36-x*19};
     }
-    set_tile(tiles:sprite[], m:{[index:string]:sprite}, x:number=0, y:number=0, w:number=1, h:number=1) {
-        let n = '';
-        let k:sprite = {};
-        let t = (p:number, X:number, Y:number):void => {
-            let n = `${x+X}_${y+Y}`;
-            let c = 0;
-            if (m[n] && m[n].data && m[n].data.p) c = m[n].data.p; 
-            let r = structuredClone(tiles[c|p]);
-            if (!r.f) r.f = 'tile/test.png';
-            r.data = {...(m[n]?.data||{}),...(tiles[c|p]?.data||{}), p:c|p};
-            m[n] = r;
-        };
-        // Inside: 0b1111
-        for (let X = 0; X < w; X++)
-            for (let Y = 0; Y < h; Y++) t(15,X,Y);
-        // North 0b0011
-        for (let X = 0; X < w; X++) t(3,X,-1);
-        // South 0b1100
-        for (let X = 0; X < w; X++) t(12,X,h);
-        // West 0b0101
-        for (let Y = 0; Y < h; Y++) t(5,-1,Y);
-        // East 0b1010
-        for (let Y = 0; Y < h; Y++) t(10,w,Y);
-        // North West 0b0001
-        t(1,-1,-1);
-        // North East 0b0010
-        t(2,w,-1);
-        // South West 0b0100
-        t(4,-1,h);
-        // South East 0b1000
-        t(8,w,h);
-    }
     generate(stuff:map_obj[]=[]) {
-        let l = (x,y):number => x+13*y+71;
-        let rd:{[index:string]:sprite} = {}; this.rd = {};
-        let bg:{[index:string]:sprite} = {}; this.bd = {};
+        this.ly = [{},{}];
+        this.bd = {};
+        let [ bg, fg ] = this.ly;
+        let bd = this.bd;
+
+        /*for (let x = -10; x < 10; x++)
+            for (let y = -10; y < 10; y++)
+                bg[`${x}_${y}`] = {data:{pre:'water'}};*/
 
         for (const s of stuff) {
+            let setted = true;
             if (s.w == undefined) s.w = 1;
             if (s.h == undefined) s.h = 1;
             if (s.type == 'sand') {
-                this.set_tile([
+                this.eng?.tile([
                     {},
                     {data:{pre:'ws_xy'}, m:[0.312,0.463,-2.45,-0.23,-1,1]},
                     {data:{pre:'ws_xy'}, m:[-1,0,0,-1,-1,1]},
@@ -100,154 +101,84 @@ export class Map extends Entity {
                 // Inside
                 let n = '';
                 for (let x = 0; x < s.w; x++)
-                    for (let y = 0; y < s.h; y++) 
-                        if (bg[n=`${x+s.x}_${y+s.y}`] && bg[n].data?.pre == 'sand') bg[n].data = {...(bg[n].data||{}), top:'grass'}
+                    for (let y = 0; y < s.h; y++)
+                        if (bg[n=`${x+s.x}_${y+s.y}`] && bg[n].data?.pre == 'sand')
+                            bg[n].data = {...(bg[n].data||{}), top:'grass'}
             } else if (s.type == 'dirt') {
                 for (let n = 0; n < s.w; n++) { let p =`${s.v?s.x:s.x+n}_${s.v?s.y+n:s.y}`;
-                    if (p in rd) rd[p] = {
+                    if (p in fg) fg[p] = {
                         f: 'road/dirt_empty.png',
                         m: [1.33725,-0.071745,-0.24675,1.2205,0,0],
-                    };
-                    // Can only be placed in grass
-                    else if (p in bg) rd[p] = {
+                    }; else if (p in bg) fg[p] = {
                         f: 'road/dirt.png',
                         m: s.v ? [1.33725,-0.071745,-0.24675,1.2205,0,0] : [-1.27025,-0.39275,0,1.2135,0,0],
                     };
                 }
             } else if (s.type == 'cement') {
                 for (let n = 0; n < s.w; n++) { let p =`${s.v?s.x:s.x+n}_${s.v?s.y+n:s.y}`;
-                    if (p in rd) rd[p] = {
+                    if (p in fg) fg[p] = {
                         f: 'road/cement_empty.png',
                         m: [1.33725,-0.071745,-0.24675,1.2205,0,0],
-                    };
-                    // Can only be placed in grass
-                    else if (p in bg) rd[p] = {
+                    }; else if (p in bg) fg[p] = {
                         f: 'road/cement.png',
                         m: s.v ? [1.33725,-0.071745,-0.24675,1.2205,0,0] : [-1.27025,-0.39275,0,1.2135,0,0],
                     };
                 }
-            } else if (s.type == 'fishing') rd[`${s.x}_${s.y}`] = {
-                f: 'building/fishing.png',
-                s: 0.75,
-                m: [1,0,0,1,5,-35],
-                p: [
-                    [-70, -80],
-                    [],
-                    [145, 110],
-                    [],
-                ],
-                click: s => this.eng?.act('building'),
-            }; else if (s.type == 'callereal') rd[`${s.x}_${s.y}`] = {
-                f: 'building/callereal.png',
-                p: [
-                    [-85, -140],
-                    [],
-                    [185, 160],
-                    [],
-                ],
-                m: [1,0,0,1,0,-60],
-                click: s => this.eng?.act('building'),
-            }; else if (s.type == 'bank') rd [`${s.x}_${s.y}`] = {
-                f: 'building/bank.png',
-                p: [
-                    [-62, -100],
-                    [],
-                    [133, 130],
-                    [],
-                ],
-                m: [1,0,0,1,4,-32],
-                click: s => this.eng?.act('building'),
-            }; else if (s.type == 'farm') rd [`${s.x}_${s.y}`] = {
-                f: 'building/farm.png',
-                p: [
-                    [-62, -100],
-                    [],
-                    [133, 130],
-                    [],
-                ],
-                click: s => this.eng?.act('building'),
-            }; else if (s.type == 'factory') rd [`${s.x}_${s.y}`] = {
-                f: 'building/factory.png',
-                p: [
-                    [-62, -100],
-                    [],
-                    [133, 130],
-                    [],
-                ],
-                s: 0.5,
-                m: [1,0,0,1,0,-50],
-                click: s => this.eng?.act('building'),
-            }; else if (s.type == 'tree') rd [`${s.x}_${s.y}`] = {
+            } else if (s.type == 'tree') fg[`${s.x}_${s.y}`] = {
                 f: 'prop/tree.png',
-                p: [
-                    [-62, -100],
-                    [],
-                    [133, 130],
-                    [],
-                ],
+                p: [[-62, -100],[],[133, 130],[]],
                 s: 0.08,
             }; else {
-                this.eng?.error_add(new Error(`Unknown type "${s.type}`));
+                setted = false;
+                //this.eng?.error_add(new Error(`Unknown type "${s.type}`));
             }
+            // Buildings
+            if (!setted) for (const Build of Map.depend) if (s.type == Build.key) {
+                console.log('ADDED', s.type);
+                fg[`${s.x}_${s.y}`] = {data:{build: new Build(this, s.x, s.y, s)}};
+                setted = true;
+            }
+            if (!setted) this.eng?.error_add(new Error(`Unknown type "${s.type}`));
         }
         // Parsing data into map info
-        for (const b in bg) {
-            let p = b.split('_').map(x=>Number(x));
-            Object.assign(bg[b], this.tile(p[0], p[1]));
-            if (bg[b].data?.pre) bg[b].f = `tile/${bg[b].data.top || bg[b].data.pre}_0.png`;
-            /*let s = typeof bg[b].data == 'string';
-            let p = b.split('_').map(x=>Number(x));
-            if (!s) Object.assign(bg[b], {f:'tile/test.png', a:0.5})
-            else if (bg[b].data == 'gnd' && bg[b].f == undefined) bg[b].f = 'tile/sand1.png';
-            else if (bg[b].data.startsWith('ws')) bg[b].f = `tile/${bg[b].data}_0.png`;
-            Object.assign(bg[b], this.tile(p[0], p[1]));
-            delete bg[b].data;*/
+        for (const n in this.ly) for (const l in this.ly[n]) {
+            let p = l.split('_').map(x=>Number(x));
+            let o = this.ly[n][l];
+            Object.assign(o, {
+                x:p[0]*72+p[1]*64,
+                y:p[1]*36-p[0]*19
+            });
+            // Background Parsing
+            if (n == '0') {
+                if (o.data?.pre) o.f = `tile/${o.data.top || o.data.pre}_0.png`;
+            }
         }
-        for (const r in rd) {
-            let p = r.split('_').map(x=>Number(x));
-            Object.assign(rd[r], this.tile(p[0], p[1]));
-        }
-        this.bg = bg;
-        this.rd = rd;
-        /*
-        // Cleanup
-        for (const bg of this.bg) {
-            if (typeof bg.data == 'string') {
-                if (bg.data.startsWith('ws')) bg.f = `tile/${bg.data}_1.png`;
-                else if (bg.data == 'gnd' && bg.f == 'tile/water.png') bg.f = 'tile/sand1.png';
-                else if (bg.data == '') {
-                    bg.f = 'tile/test.png';
-                    bg.a = 0.25;
-                }
-            } 
-        }
-        this.rd = Object.keys(rd).map(x=>rd[x]);*/
-        //console.log(this.rd);
-        //for (let n = 0; n < 20; n++) this.bg[Math.floor(Math.random()*this.bg.length)].f = Map.res[Math.floor(Math.random()*6)+1];
-        
     }
     init:boolean = true;
     render(dt:number, t:number, cam:Camera):sprite[] {
-        cam.tile({f:'ocean.png', s:1});
-        /*if (this.init) {
-            game.debug.m = [0.26139,0.4746,-2.4687,-0.27096,0,0];
-            game.debug._m = [...game.debug.m];
-            this.init = false;
+        cam.tile({f:`tile/water_bg_${Math.floor(t/800)%2}.png`, s:1.5});
+        for (const n in this.ly[0]) {
+            let bg = this.ly[0][n];
+            if (bg.data && bg.data.pre && bg.data.pre[0] == 'w' && !bg.data.top)
+                bg.f = `tile/${bg.data.pre}_${Math.floor(t/800)%2}.png`;
         }
-        game.debug.mp(dt);
-        this.bg['0_2'].m = game.debug.m;*/
-        return [ {hover: s=>{
-                if (s.click && this.eng?.act('onmap?')) s.cur = 'pointer';
+
+        let res:sprite[] = [
+            // Base
+            {hover: s=>{
+                if (s.click) s.cur = 'pointer';
             }},
             // Background
-            ...Object.values(this.bg),
-            ...Object.values(this.rd),
-            {
-                f: 'tile/test.png',
-                ...this.tile(-1,0),
-                a: 0.5,
-            },/*
-            this.bg['0_2'],*/
-        ]
+            ...Object.values(this.ly[0]),
+            // Foreground
+            ...Object.values(this.ly[1]).map(x=>{
+                if (x.data?.build) return [
+                    ...cam.merge(...x.data.build.render(dt, t, cam) as sprite[]),
+                    ...cam.merge(...x.data.build.render_pin(dt, t, cam) as sprite[]),
+                ];
+                return [x];
+            }).reduce((a,b)=>[...a,...b], []),
+        ];
+        return res;
     }
 }

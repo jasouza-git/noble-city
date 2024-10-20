@@ -11,6 +11,8 @@
  * - `sz` - Forward scale *(id 3d)*, default 1
  * - `r`  - Angle rotation in Radians, defaults 0
  * - `o`  - Origin cardinal direction includes "nsew", default "" *(center)*
+ * - `ox` - Horizontal origin
+ * - `oy` - Vertical origin
  * - `c`  - Camera coefficent from 0 *(fixed)* to 1 *(relative)*, default 1
  * - `m`  - Matrix transformation, must have 6 numbers
  * 
@@ -27,7 +29,7 @@
  *   4) Represents a quadratic curve
  *   6) Represents a bezier curve
  * - `crop` - Rectangle image offset relative to "nw"
- * - `a` - Alpha opacity from 0 *(hidden)* to 1 *(visible)*
+ * - `a` - Alpha opacity from 0 *(hidden)* to 1 *(visible)*, can also represent volume
  * 
  * **Text**
  * - `t` - Text to display
@@ -40,8 +42,6 @@
  * 
  * **System**
  * - `cur` - Sets mouse cursor
- * - `aud` - Sets audio
- * - `vol` - Audio volume from 0 *(mute)* to 1 *(full volume)*
  * 
  * **Events** *(requires points `p`)*
  * - `click` - Mouse clicked on it 
@@ -85,6 +85,14 @@ export interface sprite {
      */
     o?:''|'n'|'e'|'w'|'s'|'ne'|'nw'|'se'|'sw',
     /**
+     * Horizontal origin
+     */
+    ox?:number,
+    /**
+     * Vertical origin
+     */
+    oy?:number,
+    /**
      * Camera coefficent from 0 *(fixed)* to 1 *(relative)*, default 1
      */
     c?:number,
@@ -93,7 +101,7 @@ export interface sprite {
      */
     m?:number[],
     /**
-     * The filled texture *(color/image)* of the shape
+     * The filled texture *(color/image/audio)* of the shape
      */
     f?:string,
     /**
@@ -132,11 +140,31 @@ export interface sprite {
     /**
      * Rectangle image offset relative to "nw"
      * 
+     * ```
      * [x, y, w, h]
+     * ```
+     * - `x` - X position of crop from left
+     * - `y` - Y position of crop from top
+     * - `w` - Width of crop
+     * - `h` - Height of crop
+     * 
+     * You can incorporate sprite tiling cropping
+     * 
+     * ```
+     * [ox, oy, ow, oh, px, py, pw, ph]
+     * ```
+     * - `ox` - X offset multiplied by `0` for left, `0.5` for middle, and `1` for right
+     * - `oy` - Y offset multiplied by `0` for top, `0.5` for middle, and `1` for bottom
+     * - `ow` - Crop width for each tile
+     * - `oh` - Crop height for each tile
+     * - `px` - Position between each tile horizontally multiplied by X position
+     * - `py` - Position between each tile vertically multiplied by Y position
+     * - `pw` - Position width *(Number of horizontal tiles+1)*
+     * - `ph` - Position height *(Number of vertical tiles+1)*
      */
     crop?:number[],
     /**
-     * Alpha opacity from 0 *(hidden)* to 1 *(visible)*
+     * Alpha opacity from 0 *(hidden)* to 1 *(visible)*, can also represent volume
      */
     a?:number,
     /**
@@ -168,15 +196,19 @@ export interface sprite {
     /**
      * Sets audio
      */
-    aud?:string,
+    //aud?:string,
     /**
      * Audio volume from 0 *(mute)* to 1 *(full volume)*
      */
-    vol?:number,
+    //vol?:number,
     /**
      * Mouse clicked on it *(requires points `p`)*
      */
     click?:(s:sprite)=>void,
+    /**
+     * Mouse pressed on it *(requires points `p`)*
+     */
+    press?:(s:sprite)=>void,
     /**
      * Mouse hovered on it *(requires points `p`)*
      */
@@ -245,113 +277,87 @@ export class Camera {
      * Default camera cursor
      */
     cursor:string = 'default';
+    tolisten:sprite[] = [];
     /**
      * Renders sprites
      */
     render(base:sprite={}, ...sprites:sprite[]) {
         let eng = this._eng;
+        if (!sprites.length) {
+            sprites = [base];
+            base = {};
+        }
         for (const sp of sprites) {
             this._ctx.save();
 
             // Object
             let s:sprite = {};
             Object.assign(s, this.def, base, sp);
-            let val = (...a:any[]) => a.filter(x=>x!=undefined)[0];
 
             // Event
-            let inp = eng.inp;
-            if ((s.click || s.hover) && s.p != undefined && inp.over(s.p, [s.x||0,s.y||0], s.c)) {
-                if (s.hover) s.hover(s);
-                if (inp.click() && s.click) s.click(s);
-            }
-            if (s.cur) this.cursor = s.cur;
+            if ((s.click || s.hover || s.press) && s.p != undefined) this.tolisten.push(s);
 
             // Music
-            if (s.aud && s.aud in eng.audios) {
-                eng.audios[s.aud].active = true;
-                eng.audios[s.aud].volume = val(s.vol, this.def.vol, 1);
+            if (s.f && s.f in eng.audios) {
+                eng.audios[s.f].active = true;
+                eng.audios[s.f].volume = s.a??1;
+                continue;
             }
 
             // Conditions
-            let cf:boolean = s.f != undefined && !(s.f in eng.imgs); // Color fill?
-            let cb:boolean = s.b != undefined && !(s.b in eng.imgs); // Color stroke?
+            let cf:boolean = s.f != undefined && !(s.f in eng.imgs);        // Color fill?
+            let cb:boolean = s.b != undefined && !(s.b in eng.imgs);        // Color stroke?
             let cc:boolean = s.crop != undefined && s.crop.length == 4;     // Valid rectangle
+            let co:boolean = s.crop != undefined && s.crop.length == 8;     // Valid tiling rectangle
             
             // Fill and Stroke
             if (cf) this._ctx.fillStyle = s.f!;
             if (cb) this._ctx.strokeStyle = s.b!;
             this._ctx.lineCap = s.be == 'arc' ? 'round' : s.be == 'sqr' ? 'square' : 'butt';
             this._ctx.lineJoin = s.bj == 'arc' ? 'round' : s.bj == 'sqr' ? 'bevel' : 'miter';
-            this._ctx.lineWidth = val(s.bz, this.def.bz, 1);
+            this._ctx.lineWidth = s.bz??1;
             
             // Alpha
-            this._ctx.globalAlpha = val(s.a, this.def.a, 1);
+            this._ctx.globalAlpha = s.a??1;
 
             // Camera
             // P\left(x,y\right)=\left[xz_{cam}^c+\frac{w}{2}cz_{cam}^{c-1}+x_{cam}(1-c-z_{cam}^c),yz_{cam}^c+\frac{h}{2}cz_{cam}^{c-1}+y_{cam}(1-c-z_{cam}^c)\right]
             this._ctx.save();
-            let c:number = val(s.c, this.def.c, 1);
-            let csx = Math.pow(this.sx, c);
-            let csy = Math.pow(this.sy, c);
-            let sx:number = val(s.sx, s.s, this.def.sx, this.def.s, 1);
-            let sy:number = val(s.sy, s.s, this.def.sy, this.def.s, 1);
-            sx *= csx;
-            sy *= csy;
-            let rs = 0; // Rotate sine matrix
-            let rc = 1; // Rotate cosine matrix
-            if (s.r) {
-                rs = Math.sin(s.r);
-                rc = Math.cos(s.r);
-            }
-            this._ctx.transform(sx*rc,sx*rs,-sy*rs, sy*rc,  this.w/2*c*Math.pow(this.sx, c-1)+this.x*(1-c-csx)+(s.x||0)*csx,
-                                                            this.h/2*c*Math.pow(this.sy, c-1)+this.y*(1-c-csy)+(s.y||0)*csy);
+            s.c = s.c ?? 1;
+            let [csx, csy] = [Math.pow(this.sx, s.c), Math.pow(this.sy, s.c)];
+            s.sx = (s.sx??s.s??1)*csx;
+            s.sy = (s.sy??s.s??1)*csy;
+            let [rs, rc] = s.r ? [Math.sin(s.r), Math.cos(s.r)] : [0,1];
+            let [tx, ty] = [this.w/2*s.c*Math.pow(this.sx, s.c-1)+this.x*(1-s.c-csx)+(s.x??0)*csx, this.h/2*s.c*Math.pow(this.sy, s.c-1)+this.y*(1-s.c-csy)+(s.y??0)*csy];
+            let rect = this.rect(s);
+            this._ctx.transform(s.sx*rc,s.sx*rs,-s.sy*rs, s.sy*rc, tx, ty);
             if (s.m && s.m.length == 6) this._ctx.transform.apply(this._ctx, s.m);
             else if (s.m) eng.error_add(new Error(`Invalid transform [${s.m.toString()}]`))
-            
-            // Origin
-            this._ctx.textAlign = 'left';
-            this._ctx.textBaseline = 'top';
-            let op = [0,0]; // Offset Position
-            if (!s.o || !s.o.includes('w') && !s.o.includes('e')) { // Horizontal centering
-                if (s.crop && cc) op[0] -= s.crop[2]/2;
-                else if(s.f && !cf) op[0] -= eng.imgs[s.f].width/2;
-                this._ctx.textAlign = 'center';
-            }
-            if (!s.o || !s.o.includes('n') && !s.o.includes('s')) { // Vertical centering
-                if (s.crop && cc) op[1] -= s.crop[3]/2;
-                else if(s.f && !cf) op[1] -= eng.imgs[s.f].height/2;
-                this._ctx.textBaseline = 'middle';
-            }
-            if (s.o && s.o.includes('e')) { // Horizontal align to end
-                if (s.crop && cc) op[0] -= s.crop[2];
-                else if (s.f && !cf) op[0] -= eng.imgs[s.f].width;
-                this._ctx.textAlign = 'end';
-            }
-            if (s.o && s.o.includes('s')) { // Vertical align to end
-                if (s.crop && cc) op[1] -= s.crop[3];
-                else if (s.f && !cf) op[1] -= eng.imgs[s.f].width;
-                this._ctx.textBaseline = 'bottom';
-            }
-            this._ctx.translate(op[0], op[1]);
+            this._ctx.translate(rect[0][0]/s.sx, rect[0][1]/s.sy);
 
             // Image
             if (s.f != undefined && s.f in eng.imgs) {
-                if (s.crop && cc) this._ctx.drawImage(eng.imgs[s.f], s.crop[0], s.crop[1], s.crop[2], s.crop[3], 0, 0, s.crop[2], s.crop[3]);
-                else              this._ctx.drawImage(eng.imgs[s.f], 0, 0);
-                if (cb && s.p == undefined) {
-                    if (s.crop && cc) this._ctx.strokeRect(0, 0, s.crop[2], s.crop[3]);
-                    else              this._ctx.strokeRect(0, 0, eng.imgs[s.f].width, eng.imgs[s.f].height);
-                }
+                if (s.crop && cc)           this._ctx.drawImage(eng.imgs[s.f], s.crop[0], s.crop[1], s.crop[2], s.crop[3], 0, 0, s.crop[2], s.crop[3]);
+                else if (s.crop && co) {
+                    for (let x = 0; x <= s.crop[6]; x++) for (let y = 0; y <= s.crop[7]; y++)
+                        this._ctx.drawImage(
+                            eng.imgs[s.f],
+                            s.crop[0]*(x==0?0:x==s.crop[6]?1:0.5),
+                            s.crop[1]*(y==0?0:y==s.crop[7]?1:0.5),
+                            s.crop[2],
+                            s.crop[3],
+                            s.crop[4]*x,
+                            s.crop[5]*y,
+                            s.crop[2],
+                            s.crop[3]
+                        );
+                } else                      this._ctx.drawImage(eng.imgs[s.f], 0, 0);
+                s.p = s.p ?? rect;
             }
 
             // Position without scalling
-            let ta = this._ctx.textAlign;
-            let tb = this._ctx.textBaseline;
             this._ctx.restore();
-            this._ctx.textAlign = ta;
-            this._ctx.textBaseline = tb;
-            this._ctx.transform(csx*rc,csx*rs,-csy*rs,csy*rc,   this.w/2*c*Math.pow(this.sx, c-1)+this.x*(1-c-csx)+(s.x||0)*csx,
-                                                                this.h/2*c*Math.pow(this.sy, c-1)+this.y*(1-c-csy)+(s.y||0)*csy);
+            this._ctx.transform(csx*rc,csx*rs,-csy*rs,csy*rc,tx,ty);
             
             // Path
             if (s.p) {
@@ -377,21 +383,44 @@ export class Camera {
                     // Next point
                     n++;
                 }
-                if (cf) this._ctx.fill();
                 if (cb) this._ctx.stroke();
+                if (cf) this._ctx.fill();
             }
 
             // Text
-            if (s.t) { //s.tf != undefined ? s.tf in this._eng.font ? this._eng.font[s.tf] : s.tf : 'Arial'
-                this._ctx.font = `${s.tz != undefined ? s.tz : 20}px ${val(s.tf == undefined ? undefined : eng.fonts[s.tf], s.tf, this.def.tf, 'Arial')}`;
+            if (s.t) {
+                let height = s.tz??20;
+                let [px,py] = [0,0];
+                let [cx,cy] = [false,false];
+                this._ctx.font = `${height}px ${s.tf && s.tf in eng.fonts ? eng.fonts[s.tf] : s.tf ?? 'Arial'}`;
+                
+                if (cx=[0,0.5,1].includes(s.ox!)) this._ctx.textAlign = s.ox == 0 ? 'start' : s.ox == 1 ? 'end' : 'center';
+                if (cy=[0,0.5,1].includes(s.oy!)) this._ctx.textBaseline = s.oy == 0 ? 'top' : s.oy == 1 ? 'bottom' : 'middle';
+                if (!cx) px = -this._ctx.measureText(s.t).width*s.ox!;
+                if (!cy) py = -height*s.oy!;
+                
+                if (cb) this._ctx.strokeText(s.t, px, py);
                 if (!cf) this._ctx.fillStyle = '#000';
-                if (!cf && !cb || cf) this._ctx.fillText(s.t, 0, 0);
-                if (cb) this._ctx.strokeText(s.t, 0, 0);
+                if (!cf && !cb || cf) this._ctx.fillText(s.t, px, py);
             }
 
             // Restore
             this._ctx.restore();
         }
+    }
+    /**
+     * Seperate audio instance play
+     */
+    play(audio:string, vol:number=1):boolean {
+        if (audio in this._eng.audios) {
+            let a:HTMLMediaElement|null = new Audio();
+            a.src = this._eng.base+audio;
+            a.volume = vol;
+            a.addEventListener('ended', ()=>a = null);
+            a.play();
+            return true;
+        }
+        return false;
     }
     /**
      * Clears scene
@@ -423,7 +452,7 @@ export class Camera {
     /**
      * Titles the canvas infinitely using only one sprite
      */
-    tile(s:sprite) {
+    tile(s:sprite):void {
         let sx = s.sx != undefined ? s.sx : s.s != undefined ? s.s : this.def.sx != undefined ? this.def.sx : this.def.s != undefined ? this.def.s : 1;
         let sy = s.sy != undefined ? s.sy : s.s != undefined ? s.s : this.def.sy != undefined ? this.def.sy : this.def.s != undefined ? this.def.s : 1;
         let bcr = this.dom.getBoundingClientRect()
@@ -436,6 +465,51 @@ export class Camera {
             this.dom.style.backgroundPosition = `calc(50% + ${((s.x||0)-this.x)*this.sx*rx}px) calc(50% + ${((s.y||0)-this.y)*this.sy*ry}px)`;
             this.dom.style.backgroundSize = `${this._eng.imgs[s.f].width*this.sx*sx}px ${this._eng.imgs[s.f].height*this.sy*sy}px`;
         }
+    }
+    /**
+     * Merges the base sprites with all other sprites
+     * @param sprites Base and other sprites
+     */
+    merge(...base_and_sprites:sprite[]):sprite[] {
+        let [base, ...sprites] = base_and_sprites;
+        let r:sprite[] = [];
+        for (const sprite of sprites) r.push({...base, ...sprite});
+        return r;
+    }
+    /**
+     * Returns suppose to be `s.p` if not provided *(will derive from image)*
+     */
+    rect(s:sprite):number[][] {
+        // Conditions
+        let cf:boolean = s.f != undefined && !(s.f in this._eng.imgs); // Color fill?
+        let cc:boolean = s.crop != undefined && s.crop.length == 4;     // Valid rectangle
+        let co:boolean = s.crop != undefined && s.crop.length == 8;     // Valid tiling rectangle
+        
+        // Converting cardinal direction `s.o` into ratio origins `s.ox` and `s.oy`
+        s.ox =  s.ox ?? (
+            !s.o || !s.o.includes('w') && !s.o.includes('e') ? 0.5 :
+            s.o && s.o.includes('e') ? 1 : 0);
+        s.oy =  s.oy ?? (
+            !s.o || !s.o.includes('n') && !s.o.includes('s') ? 0.5 :
+            s.o && s.o.includes('s') ? 1 : 0);
+
+        // Shape dimensions
+        let d = s.crop && cc ? [s.crop[2], s.crop[3]] :
+                s.crop && co ? [s.crop[4]*(s.crop[6]+1), s.crop[5]*(s.crop[7]+1)] :
+                s.f && !cf   ? [this._eng.imgs[s.f].width, this._eng.imgs[s.f].height] :
+                [0, 0];
+        
+        return [[
+            // X Position
+            d[0]*-(s.ox??0.5)*(s.sx??s.s??1),
+            // Y Position
+            d[1]*-(s.oy??0.5)*(s.sy??s.s??1),
+            ],[],[
+            // Width
+            d[0]*(s.sx??s.s??1),
+            // Height
+            d[1]*(s.sy??s.s??1),
+        ],[]];
     }
 
     /**
@@ -719,6 +793,7 @@ export class Input {
 /**
  * Entity class in Engine environment
  * - `res` - Resources to be loaded before the entity can be used
+ * - `depend` - Other entities to be loaded before the main entity can be used
  * - `render(dt,t,cam)` - Renders an entity
  * - `eng` - Engine it is currently on
  */
@@ -727,6 +802,10 @@ export class Entity {
      * Resources to be loaded before the entity can be used
      */
     static res:string[] = [];
+    /**
+     * Other entities to be loaded before the main entity can be used
+     */
+    static depend:typeof Entity[] = [];
 
     /**
      * Renders the entity, the first entity represents the base entity
@@ -770,6 +849,11 @@ export class Scene {
         for (const entity of entities) {
             entity.eng = this.eng;
             this.entities.push(entity);
+        }
+    }
+    /*private add_sub(...entities:Entity[]) {
+        for (const entity of entities) {
+            entity.eng = this.eng;
         }
     }
     /**
@@ -849,7 +933,7 @@ export class Engine {
      * Audio cache
      */
     audios:{[index:string]:HTMLAudioElement&{active?:boolean}} = {};
-    
+
     /* ----- LOADING SYSTEM ----- */
     /**
      * Base directory where all resources will be loaded from, in this syntax:
@@ -862,10 +946,15 @@ export class Engine {
      * @param state Function to call for each loaded update
      * @param entities Entities to load
      */
-    load(state:(percent:number)=>void, ...entities:typeof Entity[]):void {
+    load(state:((percent:number)=>void)|null, ...entities:typeof Entity[]):string[] {
         let toload:string[] = [];
-        for (const entity of entities) toload.push(...entity.res);
-        this.load_res(state, ...toload)
+        for (const entity of entities) {
+            toload.push(...entity.res);
+            if (entity.depend.length)
+                toload.push(...this.load(null, ...entity.depend))
+        }
+        if (state != null) this.load_res(state, ...toload);
+        return toload;
     }
     /**
      * Loads resources into cache
@@ -875,6 +964,7 @@ export class Engine {
     load_res(state:(percent:number)=>void, ...files:string[]):void {
         let loads:number[][] = []; // (loaded, toload)
         let failed = false;
+        // Update loaded progress
         let update = (val:number, num:number) => {
             if (val == -1) {
                 this.load_err.push(this.base+files[num]);
@@ -886,6 +976,14 @@ export class Engine {
 
         let n = 0;
         for (const file of files) {
+            // Check if file is already loaded into cache
+            if (file in this.imgs || file in this.fonts || file in this.audios) {
+                loads.push([0,1]);
+                update(1, n);
+                n++;
+                continue;
+            }
+            // Check file format to load into cache
             let ext = file.split('.').reverse()[0].toLowerCase();
             if (['png','jpg','jpeg'].includes(ext)) {
                 loads.push([0,1]);
@@ -895,6 +993,21 @@ export class Engine {
                 img.onerror = () => update(-1,k);
                 img.src = this.base+file;
                 this.imgs[file] = img;
+            } else if (['mp3','wav'].includes(ext)) {
+                loads.push([0,1]);
+                this.audios[file] = new Audio();
+                let k = n;
+                let a = this.audios[file];
+                a.active = false;
+                a.oncanplaythrough  = () => update(1,k);
+                a.onerror = () => update(-1,k);
+                a.src = this.base+file;
+                a.volume = 0;
+                a.addEventListener('ended', ()=>{
+                    a.currentTime = 0;
+                    a.play();
+                });
+                a.load();
             } else if (['ttf','mp3','wav'].includes(ext)) {
                 loads.push([0,5]);
                 let k = n;
@@ -993,7 +1106,7 @@ export class Engine {
      * 
      * Note: must not be included in final version
      */
-    debug:{m:number[], _m:number[], mp:(dt:number)=>void} = {
+    debug:{m:number[], _m:number[], mp:(dt:number)=>void, v:number, vp:(dt:number)=>void} = {
         /**
          * Matrix tranform
          */
@@ -1003,15 +1116,15 @@ export class Engine {
          * Matrix play
          * @param dt {number} Delta-time
          */
-        mp: (dt:number):void =>{
+        mp: (dt:number):void => {
             if (this.inp.key['a'] != undefined) this.debug.m[0] -= dt*(this.inp.key['a'] == 0 ? 1 : this.inp.key['a']&2 ? 0.25 : 0);
             if (this.inp.key['d'] != undefined) this.debug.m[0] += dt*(this.inp.key['d'] == 0 ? 1 : this.inp.key['d']&2 ? 0.25 : 0);
             if (this.inp.key['q'] != undefined) this.debug.m[1] -= dt*(this.inp.key['q'] == 0 ? 1 : this.inp.key['q']&2 ? 0.25 : 0);
             if (this.inp.key['e'] != undefined) this.debug.m[1] += dt*(this.inp.key['e'] == 0 ? 1 : this.inp.key['e']&2 ? 0.25 : 0);
-            if (this.inp.key['s'] != undefined) this.debug.m[3] -= dt*(this.inp.key['s'] == 0 ? 1 : this.inp.key['s']&2 ? 0.25 : 0);
-            if (this.inp.key['w'] != undefined) this.debug.m[3] += dt*(this.inp.key['w'] == 0 ? 1 : this.inp.key['w']&2 ? 0.25 : 0);
             if (this.inp.key['x'] != undefined) this.debug.m[2] -= dt*(this.inp.key['x'] == 0 ? 1 : this.inp.key['x']&2 ? 0.25 : 0);
             if (this.inp.key['z'] != undefined) this.debug.m[2] += dt*(this.inp.key['z'] == 0 ? 1 : this.inp.key['z']&2 ? 0.25 : 0);
+            if (this.inp.key['s'] != undefined) this.debug.m[3] -= dt*(this.inp.key['s'] == 0 ? 1 : this.inp.key['s']&2 ? 0.25 : 0);
+            if (this.inp.key['w'] != undefined) this.debug.m[3] += dt*(this.inp.key['w'] == 0 ? 1 : this.inp.key['w']&2 ? 0.25 : 0);
             if (this.inp.key['c'] != undefined) this.debug.m[4] -= dt*(this.inp.key['c'] == 0 ? 4 : this.inp.key['c']&2 ? 0.25 : 0);
             if (this.inp.key['v'] != undefined) this.debug.m[4] += dt*(this.inp.key['v'] == 0 ? 4 : this.inp.key['v']&2 ? 0.25 : 0);
             if (this.inp.key['r'] != undefined) this.debug.m[5] -= dt*(this.inp.key['r'] == 0 ? 4 : this.inp.key['r']&2 ? 0.25 : 0);
@@ -1035,6 +1148,18 @@ export class Engine {
                 this.debug._m = [...this.debug.m];
                 break;
             }
+        },
+        /**
+         * Value
+         */
+        v: 1,
+        /**
+         * Value Player
+         */
+        vp: (dt:number):void => {
+            if (this.inp.key['a'] != undefined) this.debug.v -= dt*(this.inp.key['a'] == 0 ? 1 : this.inp.key['a']&2 ? 0.25 : 0);
+            if (this.inp.key['d'] != undefined) this.debug.v += dt*(this.inp.key['d'] == 0 ? 1 : this.inp.key['d']&2 ? 0.25 : 0);
+            console.log(this.debug.v);
         }
     };
 
@@ -1068,15 +1193,37 @@ export class Engine {
         // Main function
         let n = 0;
         for (const cam of this.cameras) {
+            // Camera
             cam.cursor = 'default';
             cam.clear();
             if (cam.fit) cam.fitfull();
-            if (cam.scene != null)
-                for (const entity of cam.scene.entities)
-                    cam.render(...entity.render(dt/1000, d-this._start, cam));
-            /*if (this.scene != null)
-                for (const entity of this.scene.entities)
-                    cam.render(...entity.render(dt/1000, d-this._start, cam));*/
+            cam.tolisten = [];
+            // Entities
+            let sprites:sprite[] = [];
+            if (cam.scene != null) for (const entity of cam.scene.entities) {
+                let ss = cam.merge(...entity.render(dt/1000, d-this._start, cam));
+                for (const s of ss) sprites.push(s)
+            }
+            // Listen to events
+            let clicks = 0;
+            let hovers = 0;
+            for (let n = sprites.length-1; n >= 0; n--) {
+                let s = sprites[n];
+                if (!s.hover && !s.press && !s.click) continue;
+                if (s.p == undefined) s.p = cam.rect(s);
+                if (this.inp.over(s.p, [s.x??0,s.y??0], s.c??1)) {
+                    if (hovers == 0 && s.hover) {
+                        s.hover(s);
+                        //hovers++;
+                    }
+                    if (clicks == 0 && s.click && this.inp.click()) {
+                        s.click(s);
+                        clicks++;
+                    }
+                    if (s.press && this.inp.b&1 && this.inp.g < 1) s.press(s);
+                }
+            }
+            cam.render({}, ...sprites);
             cam.dom.style.cursor = cam.cursor;
             this.loop(dt/1000, d-this._start, cam);
             n++;
@@ -1086,13 +1233,56 @@ export class Engine {
         for (const aud in this.audios) {
             let a = this.audios[aud];
             if (a.active && a.paused) a.play();
-            else if (!a.active && !a.paused) a.pause();
-            console.log(a.paused);
+            else if (!a.active && !a.paused) {
+                a.currentTime = 0;
+                a.pause();
+            }
         }
 
         // Interval
         this.inp.reset();
         setTimeout(()=>this.start_loop(false), this._wait-dt > 0 ? this._wait-dt : 0);
+    }
+
+    /* ----- ALGORITHMS ----- */
+    /**
+     * Implements a tiles to the `m` map, from the NW direction to SE
+     * @param tiles - 4 bit bitfield representing possible sprites to use based on 4 corners
+     * @param m - current map at `x_y`
+     * @param x - X position of tile
+     * @param y - Y position of tile
+     * @param w - Width of tiles
+     * @param h - Hieght of tiles
+     */
+    tile(tiles:sprite[], m:{[index:string]:sprite}, x:number=0, y:number=0, w:number=1, h:number=1) {
+        let t = (p:number, X:number, Y:number):void => {
+            let n = `${x+X}_${y+Y}`;
+            let c = 0;
+            if (m[n] && m[n].data && m[n].data.p) c = m[n].data.p; 
+            let r = structuredClone(tiles[c|p]);
+            if (!r.f) r.f = 'tile/test.png';
+            r.data = {...(m[n]?.data||{}),...(tiles[c|p]?.data||{}), p:c|p};
+            m[n] = r;
+        };
+        // Inside 0b1111
+        for (let X = 0; X < w; X++)
+            for (let Y = 0; Y < h; Y++) t(15,X,Y);
+        // North 0b0011
+        for (let X = 0; X < w; X++) t(3,X,-1);
+        // South 0b1100
+        for (let X = 0; X < w; X++) t(12,X,h);
+        // West 0b0101
+        for (let Y = 0; Y < h; Y++) t(5,-1,Y);
+        // East 0b1010
+        for (let Y = 0; Y < h; Y++) t(10,w,Y);
+        // North West 0b0001
+        t(1,-1,-1);
+        // North East 0b0010
+        t(2,w,-1);
+        // South West 0b0100
+        t(4,-1,h);
+        // South East 0b1000
+        t(8,w,h);
     }
 
     /* ----- CUSTOMIZABLE SYSTEM ----- */
