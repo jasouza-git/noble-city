@@ -5,7 +5,7 @@ export class CalleReal extends Building {
     static res = ['building/callereal.png'];
     static key = 'callereal';
     own = 0;
-    name = 'Calle Real Market';
+    name = 'CalleReal';
     render(dt:number, t:number, cam:Camera):sprite[] {
         return [this.base(dt,t,cam), {
             f: 'building/callereal.png',

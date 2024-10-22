@@ -51,7 +51,7 @@ export class Map extends Entity {
         'road/dirt.png', 'road/dirt_empty.png',
         'road/cement.png', 'road/cement_empty.png',
         // Props
-        'prop/tree.png',
+        'prop/tree.png', 'prop/bush.png',
         // Background
         'tile/water_bg_0.png', 'tile/water_bg_1.png',
         // For buildings
@@ -59,16 +59,13 @@ export class Map extends Entity {
     ];
     static depend = [Factory, Fishing, CalleReal, Bank, Farm, Blank];
     ly:{[index:string]:sprite}[] = [{},{}]; // 2 Layers: Background, Foreground
-    bd:{[index:string]:Building} = {}; // Buildings
 
     tile(x,y) {
         return {x:x*72+y*64, y:y*36-x*19};
     }
     generate(stuff:map_obj[]=[]) {
         this.ly = [{},{}];
-        this.bd = {};
         let [ bg, fg ] = this.ly;
-        let bd = this.bd;
 
         /*for (let x = -10; x < 10; x++)
             for (let y = -10; y < 10; y++)
@@ -126,7 +123,9 @@ export class Map extends Entity {
                 }
             } else if (s.type == 'tree') fg[`${s.x}_${s.y}`] = {
                 f: 'prop/tree.png',
-                p: [[-62, -100],[],[133, 130],[]],
+                s: 0.08,
+            }; else if (s.type == 'bush') fg[`${s.x}_${s.y}`] = {
+                f: 'prop/bush.png',
                 s: 0.08,
             }; else {
                 setted = false;
@@ -134,7 +133,6 @@ export class Map extends Entity {
             }
             // Buildings
             if (!setted) for (const Build of Map.depend) if (s.type == Build.key) {
-                console.log('ADDED', s.type);
                 fg[`${s.x}_${s.y}`] = {data:{build: new Build(this, s.x, s.y, s)}};
                 setted = true;
             }
@@ -156,7 +154,7 @@ export class Map extends Entity {
     }
     init:boolean = true;
     render(dt:number, t:number, cam:Camera):sprite[] {
-        cam.tile({f:`tile/water_bg_${Math.floor(t/800)%2}.png`, s:1.5});
+        cam.tile({f:`tile/water_bg_${Math.floor(t/800)%2}.png`, s:3});
         for (const n in this.ly[0]) {
             let bg = this.ly[0][n];
             if (bg.data && bg.data.pre && bg.data.pre[0] == 'w' && !bg.data.top)
@@ -172,10 +170,13 @@ export class Map extends Entity {
             ...Object.values(this.ly[0]),
             // Foreground
             ...Object.values(this.ly[1]).map(x=>{
-                if (x.data?.build) return [
-                    ...cam.merge(...x.data.build.render(dt, t, cam) as sprite[]),
-                    ...cam.merge(...x.data.build.render_pin(dt, t, cam) as sprite[]),
-                ];
+                if (x.data?.build) {
+                    let b:Building = x.data.build;
+                    return [
+                        ...cam.merge(...b.render(dt, t, cam)),
+                        ...cam.merge(...b.render_pin(dt, t, cam)),
+                    ];
+                }
                 return [x];
             }).reduce((a,b)=>[...a,...b], []),
         ];

@@ -1,18 +1,20 @@
-import { Camera, Engine, Entity, Scene, sprite } from '../engine';
+import { Camera, Engine, Scene, sprite } from '../engine';
 import { LoadMenu } from '../entity/loadmenu';
 import { UI } from '../entity/ui';
 import { Map, map_obj, Building } from '../entity/map';
 
 // Game and Camera
-let game = new Engine;
+export let game = new Engine;
 game.base = '/assets/';
-let cam = new Camera('#game', game);
+export let cam = new Camera('#game', game);
 cam.fit = true; // Make it fullscreen
+cam.scale(4);
 // Debugging
 /*
 cam.s = 2;//0.25;
 cam.y = -120;
 cam.x = 280;*/
+
 
 // Game Map
 let map_data:map_obj[] = [
@@ -28,6 +30,7 @@ let map_data:map_obj[] = [
     {type:'factory',x:-5,y:0},
     {type:'blank',x:5,y:0,color:['blue','brown','violet']},
     {type:'blank',x:4,y:0,color:['red','yellow','green']},
+    {type:'bush',x:-2,y:0},
 ];
 for (let y = 0; y < 10; y++)
     for (let x = 0; x < 10; x++)
@@ -43,7 +46,7 @@ let map = new Map(game);
 let ui = new UI();
 let mainscene = new Scene(game, map, ui);
 map.generate(map_data);
-ui.menu = 1;
+//ui.menu = 1;
 
 // Actions
 game.act = (act,...x) => {
@@ -55,7 +58,7 @@ game.act = (act,...x) => {
             // Error: Invalid argument
             if (!x.length || !(x[0] instanceof Building)) return;
             // Setup
-            cam.play('sfx/whoosh.mp3');
+            cam.play('sfx/whoosh.mp3', 0.25, 0.4);
             let e:Building = x[0];
             e.focused = true;
             ui.title = e.name;
@@ -65,6 +68,11 @@ game.act = (act,...x) => {
     // User exits building
     } else if (act == 'building_off') {
         if (ui.focus instanceof Building) ui.focus.focused = false;
+    // A popup is requested
+    } else if (act == 'pop') {
+        let ss:sprite[] = x[0];
+        ui.pop = ss;
+        ui.pop_t = 0;
     // Entity wants to know if we are focusing on map
     } else if (act == 'onmap?') return ui.menu == 1;
 }
@@ -84,7 +92,7 @@ game.loop = (dt:number, t:number, cam:Camera) => {
     if (ui.menu != 1) return;
     // Zooming effects
     if (inp.dsy) {
-        let z = Math.max(0.25, Math.min(8, cam.sx*Math.pow(2, -inp.dsy/100)));
+        let z = Math.max(0.25, Math.min(8, cam.sx*Math.pow(1.5, -inp.dsy/100)));
         //cam.x = (inp.rx*z/cam.sx+cam.w/2-inp.x)/z;
         //cam.y = (inp.ry*z/cam.sy+cam.h/2-inp.y)/z;
         cam.s = z;

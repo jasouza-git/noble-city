@@ -4,7 +4,8 @@ import { Building } from "../building";
 export class Fishing extends Building {
     static res = ['building/fishing.png'];
     static key = 'fishing';
-    name = 'Fishing Market';
+    name = 'Fishing Area';
+    price = 50000;
     render(dt:number, t:number, cam:Camera):sprite[] {
         return [this.base(dt,t,cam,0.75), {
             f: 'building/fishing.png',

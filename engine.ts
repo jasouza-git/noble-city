@@ -241,15 +241,16 @@ export class Camera {
      */
     y:number = 0;
 
+    sm:number = 1;
     /**
      * Width of canvas
      */
-    get w():number { return this.dom.width; }
+    get w():number { return Math.floor(this.dom.width/this.sm); }
     set w(v:number) { this.dom.width = v; }
     /**
      * Height of canvas
      */
-    get h():number { return this.dom.height; }
+    get h():number { return Math.floor(this.dom.height/this.sm); }
     set h(v:number) { this.dom.height = v; }
     /**
      * Scale of canvas
@@ -266,6 +267,18 @@ export class Camera {
      * Vertical scale *(set `s` to set both)*
      */
     sy:number = 1;
+
+    /**
+     * Scale to resolution multiplied
+     */
+    scale(c:number) {
+        this.dom.width *= c;
+        this.dom.height *= c;
+        this._ctx = this.dom.getContext('2d')!;
+        this._ctx.imageSmoothingEnabled = false;
+        this._ctx.scale(c, c);
+        this.sm *= c;
+    }
 
     /**
      * Default sprite template
@@ -384,7 +397,7 @@ export class Camera {
                     n++;
                 }
                 if (cb) this._ctx.stroke();
-                if (cf) this._ctx.fill();
+                if (cf && (s.bz??1)) this._ctx.fill();
             }
 
             // Text
@@ -399,7 +412,7 @@ export class Camera {
                 if (!cx) px = -this._ctx.measureText(s.t).width*s.ox!;
                 if (!cy) py = -height*s.oy!;
                 
-                if (cb) this._ctx.strokeText(s.t, px, py);
+                if (cb && (s.bz??1)) this._ctx.strokeText(s.t, px, py);
                 if (!cf) this._ctx.fillStyle = '#000';
                 if (!cf && !cb || cf) this._ctx.fillText(s.t, px, py);
             }
@@ -411,11 +424,12 @@ export class Camera {
     /**
      * Seperate audio instance play
      */
-    play(audio:string, vol:number=1):boolean {
+    play(audio:string, vol:number=1, start:number=0):boolean {
         if (audio in this._eng.audios) {
             let a:HTMLMediaElement|null = new Audio();
             a.src = this._eng.base+audio;
             a.volume = vol;
+            a.currentTime = start;
             a.addEventListener('ended', ()=>a = null);
             a.play();
             return true;

@@ -1,5 +1,6 @@
 import { Entity, sprite, Camera } from '../engine';
 import { map_obj } from './map';
+import { UI } from './ui';
 
 /**
  * Represents a building
@@ -10,6 +11,7 @@ import { map_obj } from './map';
  * - `base(dt,t,cam,s)` - Base sprite, use this when rendering building
  */
 export class Building extends Entity {
+    /* ----- FUNDAMENTAL PROPERTIES ---- */
     /**
      * Building key for map generation
      */
@@ -26,6 +28,11 @@ export class Building extends Entity {
      * - `n` - Other players owned
      */
     own:number = 1;
+    /**
+     * Price of building
+     */
+    price:number = 0;
+
     /**
      * Popup Pin : Content sprites
      */
@@ -76,6 +83,12 @@ export class Building extends Entity {
             },
             ...this.popup,
         ]
+    }
+    /**
+     * Renders interface for when the building is on focus
+     */
+    menu(dt:number, t:number, cam:Camera, ui:UI):sprite[] {
+        return [];
     }
     constructor(map:Entity, x:number, y:number, m:map_obj) {
         super();

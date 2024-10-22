@@ -7,7 +7,6 @@ export class LoadMenu extends Entity {
     per:number = 0;
     render(dt:number, t:number, cam:Camera):sprite[] {
         if (this.eng == null) return [];
-        console.log(this.per);
         return [ {c:0}, 
             { // Loading bar border
                 p: [[-100, -10],[],[200, 20],[],],
