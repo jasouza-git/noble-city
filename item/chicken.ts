@@ -5,6 +5,7 @@ export class Chicken extends Item {
     static res = ['item/chicken.png'];
     name = 'Chicken';
     price = 185;
+    color = '#EDC4C4';
     render(dt:number, t:number, cam:Camera) {
         return [this.base(dt,t,cam), {
             f: 'item/chicken.png',

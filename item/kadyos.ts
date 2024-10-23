@@ -5,6 +5,7 @@ export class Kadyos extends Item {
     static res = ['item/kadyos.png'];
     name = 'Kadyos';
     price = 200;
+    color = '#69C72E';
     render(dt:number, t:number, cam:Camera) {
         return [this.base(dt,t,cam), {
             f: 'item/kadyos.png',

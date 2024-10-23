@@ -5,6 +5,7 @@ export class Soup extends Item {
     static res = ['item/soup.png'];
     name = 'Soup';
     price = 35;
+    color = '#40BE2E';
     render(dt:number, t:number, cam:Camera) {
         return [this.base(dt,t,cam), {
             f: 'item/soup.png',

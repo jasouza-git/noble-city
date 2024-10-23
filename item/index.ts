@@ -18,6 +18,10 @@ export class Item extends Entity {
      */
     price:number = 0;
     /**
+     * Color of line in graph
+     */
+    color:string = '';
+    /**
      * Base sprite for the relatively drawn building
      * @param dt - Delta-time
      * @param t - Time
@@ -29,6 +33,9 @@ export class Item extends Entity {
         return {
             c: 0,
         };
+    }
+    num(x:number=0, y:number=0, q:number|null=null):sprite {
+        return { t:String(q??this.quantity), x:10+x, y:y-3, b:'#FBE7CD', bz:2, f:'black', tz:10 };
     }
     /**
      * Renders interface for when the building is on focus

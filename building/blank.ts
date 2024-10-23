@@ -32,9 +32,16 @@ export class Blank extends Building {
             ...b,
         }];
     }
+    d = 100; // Color diversity
     constructor(map:Entity, x:number, y:number, m:map_obj) {
         super(map, x, y, m);
         if (m.color?.length == 3) this.color = m.color;
+        else this.color = Array(3).fill('').map(_=>`rgb(${255-this.d+this.d*Math.random()},${255-this.d+this.d*Math.random()},${255-this.d+this.d*Math.random()})`);
+    }
+    menu(dt:number, t:number, cam:Camera):sprite[] {
+        return [
+            { t:'You cant own this', tz:15, a:0.5 },
+        ];
     }
 }
 

@@ -213,6 +213,10 @@ export interface sprite {
      * Mouse hovered on it *(requires points `p`)*
      */
     hover?:(s:sprite)=>void,
+    /**
+     * Mouse did not hovered on it *(requires points `p`)*
+     */
+    nohover?:(s:sprite)=>void,
 };
 /**
  * Camera responsible for rendering the scene
@@ -1252,12 +1256,14 @@ export class Engine {
             let hovers = 0;
             for (let n = sprites.length-1; n >= 0; n--) {
                 let s = sprites[n];
-                if (!s.hover && !s.press && !s.click) continue;
+                if (!s.hover && !s.press && !s.click && !s.nohover) continue;
                 if (s.p == undefined) s.p = cam.rect(s);
+                let h = false;
                 if (this.inp.over(s.p, [s.x??0,s.y??0], s.c??1)) {
                     if (hovers == 0 && s.hover) {
                         s.hover(s);
                         //hovers++;
+                        h = true;
                     }
                     if (clicks == 0 && s.click && this.inp.click()) {
                         s.click(s);
@@ -1265,6 +1271,7 @@ export class Engine {
                     }
                     if (s.press && this.inp.b&1 && this.inp.g < 1) s.press(s);
                 }
+                if (!h && s.nohover) s.nohover(s);
             }
             cam.render({}, ...sprites);
             cam.dom.style.cursor = cam.cursor;

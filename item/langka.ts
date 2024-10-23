@@ -5,6 +5,7 @@ export class Langka extends Item {
     static res = ['item/langka.png'];
     name = 'Langka';
     price = 100;
+    color = '#3B6123';
     render(dt:number, t:number, cam:Camera) {
         return [this.base(dt,t,cam), {
             f: 'item/langka.png',

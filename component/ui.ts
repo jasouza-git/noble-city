@@ -95,6 +95,7 @@ export class UI extends Entity {
         'sfx/whoosh.mp3',
         'ui/button_up.png', 'ui/button_down.png', 'ui/button_disabled.png',
         'plan.png',
+        'ui/arrow.png', 'ui/arrow_off.png'
     ];
     static depend = [...Items, ...People];
     /**
@@ -212,7 +213,7 @@ export class UI extends Entity {
                 this.menu = 2;
             }, data:{x:-7,y:7}}),
             ...b({x:cam.w+30-120*v(1), y:10, o:'ne', f:'ui/next.png', click: s => {
-
+                economy.next();
             }, data:{x:-10,y:9}}),
             ...b({x:cam.w+70-80*v(2), y:10, o:'ne', f:'ui/close.png', click: s=> {
                 this.closed();
@@ -263,11 +264,14 @@ export class UI extends Entity {
                 ...economy.item.map((i,n) => {
                     let x = (n+economy.own.length)%8;
                     let y = Math.floor((n+economy.own.length)/8);
-                    return merge(i.render(dt, t, cam)).map(s => {
-                        s.x = 75+70*x;
-                        s.y = 100+70*y+(cam.h-50)*(1-v(2));
-                        return s;
-                    });
+                    return [
+                        ...merge(i.render(dt, t, cam)).map(s => {
+                            s.x = 75+70*x;
+                            s.y = 100+70*y+(cam.h-50)*(1-v(2));
+                            return s;
+                        }),
+                        i.num(75+70*x,110+70*y+(cam.h-50)*(1-v(2))),
+                    ];
                 }).flat(),
             ] : [
                 // Side Description
@@ -276,12 +280,14 @@ export class UI extends Entity {
                 ...b({x:cam.w/4, y:cam.h+25-(cam.h/8+25)*v(2), ...([
                     {t:'Cant Own', f:'#F44336'},
                     {t:'Purchase', f:'#4CAF50', click: s=>{
-                        if (this.focus instanceof Building) economy.purchase(this.focus);
+                        if (this.focus instanceof Building) economy.building(this.focus, true);
                     }},
-                    {t:'Sell', f:'#2196F3'},
+                    {t:'Sell', f:'#2196F3', click: s=>{
+                        if (this.focus instanceof Building) economy.building(this.focus, false);
+                    }},
                 ][this.focus.own] ??  {t:'Unknown', f:'#F44336'})}, 15, 2),
                 // Price
-                ...(this.focus.price && this.focus.own == 1 ? [{
+                ...(this.focus.price ? [{
                     t: `₱${this.focus.price}`,
                     x: cam.w/4,
                     y: cam.h+25-(cam.h/4+15)*v(2),

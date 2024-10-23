@@ -5,6 +5,7 @@ export class Fish extends Item {
     static res = ['item/fish.png'];
     name = 'Fish';
     price = 175;
+    color = '#83D6DC';
     render(dt:number, t:number, cam:Camera) {
         return [this.base(dt,t,cam), {
             f: 'item/fish.png',

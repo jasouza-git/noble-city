@@ -5,6 +5,7 @@ export class Garlic extends Item {
     static res = ['item/garlic.png'];
     name = 'Garlic';
     price = 250;
+    color = '#fff';
     render(dt:number, t:number, cam:Camera) {
         return [this.base(dt,t,cam), {
             f: 'item/garlic.png',

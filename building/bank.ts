@@ -20,13 +20,13 @@ export class Bank extends Building {
         }];
     }
     menu(dt:number, t:number, cam:Camera):sprite[] {
-        let savings=economy.logs[0], loans=economy.logs[1];
+        let savings=[...economy.logs[0],economy.saving], loans=[...economy.logs[1],economy.loan];
         let max = Math.max(100,Math.max(...savings, ...loans));
         return [
             // Graph box between ([-135,-133],[],[270,70],[])
             ...box({x:0,y:-98}, cam, 19, 4, 2),
-            { p: savings.length < 2 ? [[0,55],[270,55]] : savings.map((x,n)=>[270*n/(savings.length-1),55*(1-x/max)]), b:'green', x:-135, y:-125, bz:2, a:0.5 },
-            { p: loans.length < 2 ? [[0,55],[270,55]] : loans.map((x,n)=>[270*n/(loans.length-1),55*(1-x/max)]), b:'red', x:-135, y:-125, bz:2, a:0.5 },
+            { p: savings.length < 2 ? [[0,55*(1-(savings[0]??0)/max)],[270,55*(1-(savings[0]??0)/max)]] : savings.map((x,n)=>[270*n/(savings.length-1),55*(1-x/max)]), b:'green', x:-135, y:-125, bz:2, a:0.5 },
+            { p: loans.length < 2 ? [[0,55*(1-(loans[0]??0)/max)],[270,55*(1-(loans[0]??0)/max)]] : loans.map((x,n)=>[270*n/(loans.length-1),55*(1-x/max)]), b:'red', x:-135, y:-125, bz:2, a:0.5 },
             // { p: [[-135,-125],[],[270,55],[]], f:'red', a:0.5 },
 
             // Savings Account

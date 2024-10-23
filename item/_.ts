@@ -44,7 +44,9 @@ export interface process_session {
     in:Item[],
     out:Item[],
     amount:number[],
-    dur:number,
+    dur:number, left:number,
+    on:boolean,
+    ongoing:boolean,
 };
 /**
  * Processes between items
@@ -63,5 +65,6 @@ export let Process:process[] = [
     { type:'farm', in:[Carrot,Tomato], out:[Pork], amount:[20,30,50], dur:3 },
     { type:'farm', in:[Tomato,Fish], out:[Chicken], amount:[10,5,40], dur:3 },
     { type:'fish', in:[Worm], out:[Fish], amount:[1,50], dur:1 },
-    { type:'factory', in:[Fish], out:[Tuna], amount:[1,2], dur:0 },
+    { type:'factory', in:[Fish], out:[Tuna], amount:[1,2], dur:1 },
+    { type:'factory', in:[Tomato], out:[Soup], amount:[3,1], dur:1 },
 ];
