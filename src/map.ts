@@ -14,11 +14,12 @@ export let map_data:map_obj[] = [
     {type:'bush',x:-2,y:0},
     {type:'farm',x:-2,y:0},
     {type:'tree',x:0,y:3},
+    {type:'bush',x:-5,y:5},
+    {type:'forest',x:-8,y:-8,w:10,h:10},
 ];
 
 // Debugging
 /*
 for (let y = 0; y < 10; y++)
     for (let x = 0; x < 10; x++)
-        map_data.push({type:'tree',x:-8+x*0.5+(Math.random()-0.5),y:-8+y*0.5+(Math.random()-0.5)});
-    */
+        map_data.push({type:'tree',x:-8+x*0.5+(Math.random()-0.5),y:-8+y*0.5+(Math.random()-0.5)});*/

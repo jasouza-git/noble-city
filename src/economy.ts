@@ -29,9 +29,9 @@ export class Economy {
     logs:number[][] = [[],[]];
     last:number = 0;
     /**
-     * Day
+     * Days left before Dinagyang
      */
-    day = 0;
+    day = 10;
 
     /**
      * Update logs
