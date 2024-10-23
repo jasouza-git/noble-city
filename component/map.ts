@@ -51,7 +51,7 @@ export class Map extends Entity {
         'road/dirt.png', 'road/dirt_empty.png',
         'road/cement.png', 'road/cement_empty.png',
         // Props
-        'prop/tree.png', 'prop/bush.png',
+        'prop/tree.png', 'prop/bush.png', 'prop/coconut.png',
         // Background
         'tile/water_bg_0.png', 'tile/water_bg_1.png',
         // For buildings
@@ -146,10 +146,15 @@ export class Map extends Entity {
             }; else if (s.type == 'forest') {
                 if (s.d == undefined) s.d = 1;
                 for (let y = 0; y < s.h*s.d; y++) for (let x = 0; x < s.w*s.d; x++) {
-                    let p = [s.x+x/s.d+(Math.random()-0.5), s.y+y/s.d+(Math.random()-0.5)];
-                    fg[`${p[0]}_${p[1]}`] = {
+                    let p = [s.x+x/s.d+(Math.random()-0.5)/2, s.y+y/s.d+(Math.random()-0.5)/4];
+                    let l = `${Math.round(p[0])}_${Math.round(p[1])}`;
+                    fg[`${p[0]}_${p[1]}`] = l in bg && bg[l].data?.top == 'grass' ? {
                         f: 'prop/tree.png',
                         m: [1,0,0,1,0,-25],
+                    } : {
+                        f: 'prop/coconut.png',
+                        s: 0.0625,
+                        m: [1,0,0,1,0,-350],
                     };
                 }
             } else if (s.type == 'bush') fg[p] = {
