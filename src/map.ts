@@ -1,7 +1,7 @@
 import { map_obj } from '../component/map';
 export let map_data:map_obj[] = [
     {type:'sand', x:-10, y:-10, w:20, h:20},
-    {type:'grass',x:-9, y:-9, w:18, h:18},
+    {type:'grass',x:-9, y:-5, w:18, h:14},
     {type:'fishing', x:7, y:9},
     {type:'dirt',x:3,y:-8,w:16,v:true},
     {type:'cement',x:-8,y:1,w:16},
@@ -15,7 +15,7 @@ export let map_data:map_obj[] = [
     {type:'farm',x:-2,y:0},
     {type:'tree',x:0,y:3},
     {type:'bush',x:-5,y:5},
-    {type:'forest',x:-8,y:-8,w:10,h:10,d:0.5},
+    {type:'forest',x:-8,y:-8,w:5,h:5},
 ];
 
 // Debugging
