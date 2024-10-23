@@ -59,7 +59,7 @@ game.loop = (dt:number, t:number, cam:Camera) => {
     if (ui.menu != 1) return;
     // Zooming effects
     if (inp.dsy) {
-        let z = Math.max(0.25, Math.min(8, cam.sx*Math.pow(1.5, -inp.dsy/100)));
+        let z = Math.max(0.08, Math.min(8, cam.sx*Math.pow(1.5, -inp.dsy/100)));
         //cam.x = (inp.rx*z/cam.sx+cam.w/2-inp.x)/z;
         //cam.y = (inp.ry*z/cam.sy+cam.h/2-inp.y)/z;
         cam.s = z;
@@ -69,8 +69,8 @@ game.loop = (dt:number, t:number, cam:Camera) => {
     if (inp.b&1) {
         cam.x -= inp.dx/cam.sx;
         cam.y -= inp.dy/cam.sy;
-        let rx = 1300*Math.min(1,cam.sx);
-        let ry = 600*Math.min(1,cam.sy);
+        let rx = 20000*Math.min(1,cam.sx);
+        let ry = 7800*Math.min(1,cam.sy);
         cam.x = Math.min(rx, Math.max(-rx, cam.x));
         cam.y = Math.min(ry, Math.max(-ry, cam.y));
     }

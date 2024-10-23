@@ -1,5 +1,6 @@
 import { map_obj } from '../component/map';
 export let map_data:map_obj[] = [
+    
     {type:'sand', x:-10, y:-10, w:20, h:20},
     {type:'grass',x:-9, y:-9, w:18, h:18},
     {type:'fishing', x:7, y:9},
