@@ -33,6 +33,10 @@ export interface map_obj {
      * Colors for dynamic coloring system
      */
     color?:string[],
+    /**
+     * Density
+     */
+    d?:number,
 }
 export class Map extends Entity {
     static res = [
@@ -140,8 +144,9 @@ export class Map extends Entity {
                 f: 'prop/tree.png',
                 m: [1,0,0,1,0,-25],
             }; else if (s.type == 'forest') {
-                for (let y = 0; y < s.h; y++) for (let x = 0; x < s.w; x++) {
-                    let p = [s.x+x*0.5+(Math.random()-0.5), s.y+y*0.5+(Math.random()-0.5)];
+                if (s.d == undefined) s.d = 1;
+                for (let y = 0; y < s.h*s.d; y++) for (let x = 0; x < s.w*s.d; x++) {
+                    let p = [s.x+x/s.d+(Math.random()-0.5), s.y+y/s.d+(Math.random()-0.5)];
                     fg[`${p[0]}_${p[1]}`] = {
                         f: 'prop/tree.png',
                         m: [1,0,0,1,0,-25],

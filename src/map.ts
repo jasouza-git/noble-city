@@ -15,7 +15,7 @@ export let map_data:map_obj[] = [
     {type:'farm',x:-2,y:0},
     {type:'tree',x:0,y:3},
     {type:'bush',x:-5,y:5},
-    {type:'forest',x:-8,y:-8,w:10,h:10},
+    {type:'forest',x:-8,y:-8,w:10,h:10,d:0.5},
 ];
 
 // Debugging
