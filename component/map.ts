@@ -161,7 +161,7 @@ export class Map extends Entity {
     }
     init:boolean = true;
     render(dt:number, t:number, cam:Camera):sprite[] {
-        cam.tile({f:`tile/water_bg_${Math.floor(t/800)%2}.png`, s:3});
+        cam.tile({f:`tile/water_bg_${Math.floor(t/800)%2}.png`, s:0.5});
         for (const n in this.ly[0]) {
             let bg = this.ly[0][n];
             if (bg.data && bg.data.pre && bg.data.pre[0] == 'w' && !bg.data.top)

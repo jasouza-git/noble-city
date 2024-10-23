@@ -329,7 +329,7 @@ export class Camera {
             let cb:boolean = s.b != undefined && !(s.b in eng.imgs);        // Color stroke?
             let cc:boolean = s.crop != undefined && s.crop.length == 4;     // Valid rectangle
             let co:boolean = s.crop != undefined && s.crop.length == 8;     // Valid tiling rectangle
-            
+
             // Fill and Stroke
             if (cf) this._ctx.fillStyle = s.f!;
             if (cb) this._ctx.strokeStyle = s.b!;
@@ -338,6 +338,10 @@ export class Camera {
             this._ctx.lineWidth = s.bz??1;
             
             // Alpha
+            if (s.a == 0) {
+                this._ctx.restore();
+                continue;
+            }
             this._ctx.globalAlpha = s.a??1;
 
             // Camera
@@ -354,6 +358,18 @@ export class Camera {
             if (s.m && s.m.length == 6) this._ctx.transform.apply(this._ctx, s.m);
             else if (s.m) eng.error_add(new Error(`Invalid transform [${s.m.toString()}]`))
             this._ctx.translate(rect[0][0]/s.sx, rect[0][1]/s.sy);
+            
+            // Image rendering off camera optimization
+            if (s.f && !cf) {
+                // width, height
+                let p = s.crop && cc ? [s.crop[2]*s.sx*rc, s.crop[3]*s.sy*rc] :
+                        s.crop && co ? [s.crop[4]*(s.crop[6]+1)*s.sx*rc, s.crop[5]*(s.crop[7]+1)*s.sy*rc] :
+                        [this._eng.imgs[s.f].width*s.sx*rc, this._eng.imgs[s.f].height*s.sy*rc];
+                if (this.w+p[0] < tx || this.h+p[1] < ty || tx+p[0] < 0 || ty+p[1] < 0) {
+                    this._ctx.restore();
+                    continue;
+                }
+            }
 
             // Image
             if (s.f != undefined && s.f in eng.imgs) {
@@ -479,14 +495,25 @@ export class Camera {
         let bcr = this.dom.getBoundingClientRect()
         let rx = bcr.width/this.w;
         let ry = bcr.height/this.h;
+        let ax = this.w/innerWidth;
         if (!s.f || !(s.f in this._eng.imgs)) {
             if(s.f != undefined) this.dom.style.background = s.f;
         } else {
+            // Set preload so that it doesnt glitches during switching
+            if (!this._tile_pic.includes(s.f)) {
+                let a = document.createElement('link');
+                a.setAttribute('rel', 'preload');
+                a.setAttribute('href', `${this._eng.base}${s.f}`);
+                a.setAttribute('as', 'image');
+                document.body.appendChild(a);
+            }
+            // Set background
             this.dom.style.backgroundImage = `url(${this._eng.base}${s.f})`;
             this.dom.style.backgroundPosition = `calc(50% + ${((s.x||0)-this.x)*this.sx*rx}px) calc(50% + ${((s.y||0)-this.y)*this.sy*ry}px)`;
-            this.dom.style.backgroundSize = `${this._eng.imgs[s.f].width*this.sx*sx}px ${this._eng.imgs[s.f].height*this.sy*sy}px`;
+            this.dom.style.backgroundSize = `${this._eng.imgs[s.f].width*this.sx*sx/ax}px ${this._eng.imgs[s.f].height*this.sy*sy/ax}px`;
         }
     }
+    private _tile_pic:string[] = [];
     /**
      * Returns suppose to be `s.p` if not provided *(will derive from image)*
      */
