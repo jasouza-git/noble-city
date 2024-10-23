@@ -328,7 +328,7 @@ export class Camera {
             let cf:boolean = s.f != undefined && !(s.f in eng.imgs);        // Color fill?
             let cb:boolean = s.b != undefined && !(s.b in eng.imgs);        // Color stroke?
             let cc:boolean = s.crop != undefined && s.crop.length == 4;     // Valid rectangle
-            let co:boolean = s.crop != undefined && s.crop.length == 8;     // Valid tiling rectangle
+            let co:boolean = s.crop != undefined && s.crop.length >= 8;     // Valid tiling rectangle
 
             // Fill and Stroke
             if (cf) this._ctx.fillStyle = s.f!;
@@ -376,17 +376,22 @@ export class Camera {
             if (s.f != undefined && s.f in eng.imgs) {
                 if (s.crop && cc)           this._ctx.drawImage(eng.imgs[s.f], s.crop[0], s.crop[1], s.crop[2], s.crop[3], 0, 0, s.crop[2], s.crop[3]);
                 else if (s.crop && co) {
-                    for (let x = 0; x <= s.crop[6]; x++) for (let y = 0; y <= s.crop[7]; y++)
+                    let w = s.crop[2]*(s.crop[6]%1||1);
+                    let cw = s.crop[4]*(s.crop[6]%1||1);
+                    let h = s.crop[3]*(s.crop[7]%1||1);
+                    let ch = s.crop[5]*(s.crop[6]%1||1);
+                    let mw = Math.ceil(s.crop[6]), mh = Math.ceil(s.crop[7]);
+                    for (let x = 0; x <= mw; x++) for (let y = 0; y <= mh; y++)
                         this._ctx.drawImage(
                             eng.imgs[s.f],
-                            s.crop[0]*(x==0?0:x==s.crop[6]?1:0.5),
-                            s.crop[1]*(y==0?0:y==s.crop[7]?1:0.5),
-                            s.crop[2],
-                            s.crop[3],
-                            s.crop[4]*x,
-                            s.crop[5]*y,
-                            s.crop[2],
-                            s.crop[3]
+                            (s.crop[0]+s.crop[2]-w)*(x==0?0:x==mw?1:0.5)+(s.crop[8]??0),
+                            (s.crop[1]+s.crop[3]-h)*(y==0?0:y==mh?1:0.5)+(s.crop[9]??0),
+                            w,
+                            h,
+                            cw*x,
+                            ch*y,
+                            w,
+                            h
                         );
                 } else                      this._ctx.drawImage(eng.imgs[s.f], 0, 0);
                 s.p = s.p ?? rect;
@@ -522,7 +527,7 @@ export class Camera {
         // Conditions
         let cf:boolean = s.f != undefined && !(s.f in this._eng.imgs); // Color fill?
         let cc:boolean = s.crop != undefined && s.crop.length == 4;     // Valid rectangle
-        let co:boolean = s.crop != undefined && s.crop.length == 8;     // Valid tiling rectangle
+        let co:boolean = s.crop != undefined && s.crop.length >= 8;     // Valid tiling rectangle
         
         // Converting cardinal direction `s.o` into ratio origins `s.ox` and `s.oy`
         s.ox =  s.ox ?? (
@@ -534,7 +539,7 @@ export class Camera {
 
         // Shape dimensions
         let d = s.crop && cc ? [s.crop[2], s.crop[3]] :
-                s.crop && co ? [s.crop[4]*(s.crop[6]+1), s.crop[5]*(s.crop[7]+1)] :
+                s.crop && co ? [s.crop[4]*(s.crop[6]+1)-(s.crop[8]??0), s.crop[5]*(s.crop[7]+1)-(s.crop[9]??0)] :
                 s.f && !cf   ? [this._eng.imgs[s.f].width, this._eng.imgs[s.f].height] :
                 [0, 0];
         

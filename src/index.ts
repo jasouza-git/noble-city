@@ -5,6 +5,7 @@ import { UI } from '../component/ui';
 import { economy } from './economy';
 import { Items } from '../item/_';
 import { map_data } from './map';
+import { Mentor } from '../people/mentor';
 
 // Game and Camera
 export let game = new Engine;
@@ -48,6 +49,13 @@ export function popup(sprites:sprite[]):void {
 }
 ui.menu = 1;
 //ui.title = 'Inventory';
+
+let m = new Mentor();
+m.msg = [
+    ['Good morning my new apprentice and\nwelcome to Iloilo!', 0],
+    [`You must take advantage of the\nupcoming Dinagyang festival in ${economy.day} days`, 5],
+];
+//ui.chat = m;
 
 // Main loop
 game.loop = (dt:number, t:number, cam:Camera) => {

@@ -39,6 +39,13 @@ export interface process {
     amount:number[],
     dur:number,
 };
+export interface process_session {
+    id:number,
+    in:Item[],
+    out:Item[],
+    amount:number[],
+    dur:number,
+};
 /**
  * Processes between items
  * - `type` - What type of building does this processing
@@ -50,12 +57,11 @@ export interface process {
 export let Process:process[] = [
     { type:'farm', in:[Fertilizer], out:[Carrot], amount:[1,20], dur:2 },
     { type:'farm', in:[Fertilizer], out:[Garlic], amount:[1,10], dur:1 },
-    { type:'farm', in:[Fertilizer], out:[Garlic], amount:[1,10], dur:1 },
-    { type:'farm', in:[Fertilizer], out:[Garlic], amount:[1,10], dur:1 },
-    { type:'farm', in:[Fertilizer], out:[Garlic], amount:[1,10], dur:1 },
-    { type:'farm', in:[Fertilizer], out:[Garlic], amount:[1,10], dur:1 },
-    { type:'farm', in:[Fertilizer], out:[Garlic], amount:[1,10], dur:1 },
-    { type:'farm', in:[Fertilizer], out:[Garlic], amount:[1,10], dur:1 },
+    { type:'farm', in:[Fertilizer], out:[Kadyos], amount:[1,12], dur:2 },
+    { type:'farm', in:[Fertilizer], out:[Tomato], amount:[1,10], dur:1 },
+    { type:'farm', in:[Fertilizer], out:[Radish], amount:[1,10], dur:1 },
+    { type:'farm', in:[Carrot,Tomato], out:[Pork], amount:[20,30,50], dur:3 },
+    { type:'farm', in:[Tomato,Fish], out:[Chicken], amount:[10,5,40], dur:3 },
     { type:'fish', in:[Worm], out:[Fish], amount:[1,50], dur:1 },
     { type:'factory', in:[Fish], out:[Tuna], amount:[1,2], dur:0 },
 ];

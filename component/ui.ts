@@ -2,6 +2,8 @@ import { sprite, Camera, Entity, merge } from '../src/engine';
 import { Building } from '../building';
 import { economy } from '../src/economy';
 import { Items } from '../item/_';
+import { People } from '../people/_';
+import { Person } from '../people';
 
 /**
  * Returns the sprites nessary to render a box
@@ -42,7 +44,7 @@ export function box(s:sprite, cam:Camera, w:number=1, h:number=1, mode:number=0)
             s: 0.25,
             o: s.o??'',
             r: s.r??0,
-            a: mode==3?0.5:1,
+            a: (mode&3)==3?0.5:1,
         });
         delete s.f;
         delete s.r;
@@ -56,17 +58,17 @@ export function box(s:sprite, cam:Camera, w:number=1, h:number=1, mode:number=0)
         if (p) p(s);
     };
     return [{
-        f: mode == 3 ? 'ui/button_disabled.png' : mode == 2 ? 'ui/button_down.png' : 'ui/button_up.png',
+        f: (mode&3) == 3 ? 'ui/button_disabled.png' : (mode&3) == 2 ? 'ui/button_down.png' : 'ui/button_up.png',
         s: 0.25,
-        crop: [60,59,60,59,57,56,w,h],
+        crop: (mode&4) == 4 ? [49,48,49,48,46,45,w,h,11,11] : [60,59,60,59,57,56,w,h],
         press: s => {
             if (s.data && s.data.button) s.f = 'ui/button_down.png';
         },
         ...s,
         data: {
             ...(s.data??{}),
-            button: mode == 0,
-            disabled: mode == 3,
+            button: (mode&3) == 0,
+            disabled: (mode&3) == 3,
         },
     }, ...r];
 }
@@ -94,7 +96,7 @@ export class UI extends Entity {
         'ui/button_up.png', 'ui/button_down.png', 'ui/button_disabled.png',
         'plan.png',
     ];
-    static depend = Items;
+    static depend = [...Items, ...People];
     /**
      * Top popup
      */
@@ -103,6 +105,10 @@ export class UI extends Entity {
     pop_t = 0;
     help = 0;
     private help_c = 0;
+    /**
+     * Chat box
+     */
+    chat:Person|null = null;
     /**
      * The close button was clicked
      */
@@ -115,6 +121,12 @@ export class UI extends Entity {
         this.pop_t = 0;
     }
     focused:(build:Building)=>void = ()=>{};
+    /**
+     * Tutorial Stage
+     * 0. Not in tutorial
+     * 1.
+     */
+    tutorial = 1;
     /**
      * Menu
      * 
@@ -144,6 +156,8 @@ export class UI extends Entity {
         // Stop focusing on entity
         if (this.menu != 2 && this.focus != null && Math.abs(this.m-2) > 0.99)
             this.focus = null;
+        // Stop chatbox
+        if (this.chat && !this.chat.msg.length) this.chat = null;
         // Shortcuts
         let v = (...n:number[]) => n.map(x=>Math.max(0, 1-Math.abs(this.m-x))).reduce((a,b)=>a+b,0);
         let coin_num = Math.floor(t/200)%4;
@@ -176,12 +190,14 @@ export class UI extends Entity {
                 bz: 4,
             },
             // Day
-            {   t: String(economy.day),
-                tz: 20,
+            {   t: `${economy.day} days left`,
+                tz: 15,
                 x: cam.w-130,
                 y: 28-38*v(0,2),
                 o: 'e',
                 f: 'white',
+                b: 'black',
+                bz: 5,
             },
             // FPS
             { t:String(this.eng.fps), o:'nw', tz:8 },
@@ -281,6 +297,23 @@ export class UI extends Entity {
                     return s;
                 }),
             ]),
+            // Chatbox
+            ...(this.chat != null ? [
+                // Person
+                ...merge(this.chat.render(dt, t, cam)).map(s=> {
+                    s.x = (s.x??0)+13*cam.w/16;
+                    s.y = (s.y??0)+9*cam.h/16+500*(1-v(1));
+                    return s;
+                }),
+                // Box
+                ...b({x:cam.w/2, y:cam.h-45+500*(1-v(1)), click: s => this.chat?.next()}, 40, 6),
+                // Name
+                { t:this.chat.name, x:35, y:cam.h-85+500*(1-v(1)), o:'nw' } as sprite,
+                // Message
+                ...this.chat.chat_txt.split('\n').map((l,n) => {
+                    return { t:l, x:35, y:cam.h-50+500*(1-v(1))+20*n, o:'nw', tz:15, a:0.75 } as sprite;
+                }),
+            ] : []),
             // Title
             ...(this.title.toLowerCase() == 'inventory' ? [{
                 t: this.title,

@@ -9,7 +9,7 @@ export class Garlic extends Item {
         return [this.base(dt,t,cam), {
             f: 'item/garlic.png',
             s: 0.125,
-            m: [1,0,0,1,0,-90],
+            m: [1,0,0,1,0,-70],
         }];
     }
 }

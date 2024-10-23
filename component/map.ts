@@ -33,6 +33,10 @@ export interface map_obj {
      * Colors for dynamic coloring system
      */
     color?:string[],
+    /**
+     * Density
+     */
+    d?:number,
 }
 export class Map extends Entity {
     static res = [
@@ -139,9 +143,18 @@ export class Map extends Entity {
             } else if (s.type == 'tree') fg[p] = {
                 f: 'prop/tree.png',
                 m: [1,0,0,1,0,-25],
-            }; else if (s.type == 'bush') fg[p] = {
+            }; else if (s.type == 'forest') {
+                if (s.d == undefined) s.d = 1;
+                for (let y = 0; y < s.h*s.d; y++) for (let x = 0; x < s.w*s.d; x++) {
+                    let p = [s.x+x/s.d+(Math.random()-0.5), s.y+y/s.d+(Math.random()-0.5)];
+                    fg[`${p[0]}_${p[1]}`] = {
+                        f: 'prop/tree.png',
+                        m: [1,0,0,1,0,-25],
+                    };
+                }
+            } else if (s.type == 'bush') fg[p] = {
                 f: 'prop/bush.png',
-                s: 0.08,
+                s: 1,
             }; else if (s.type == 'test') fg[p] = {
                 f: 'tile/test.png',
                 a: 0.5,
@@ -152,7 +165,7 @@ export class Map extends Entity {
                 b.on_focused = b=>this.focused(b);
                 fg[p] = {data:{build: b}};
                 setted = true;
-                economy.own.push(b);
+                //economy.own.push(b);
             }
             if (!setted) this.eng?.error_add(new Error(`Unknown type "${s.type}`));
         }
@@ -172,7 +185,7 @@ export class Map extends Entity {
     }
     init:boolean = true;
     render(dt:number, t:number, cam:Camera):sprite[] {
-        cam.tile({f:`tile/water_bg_${Math.floor(t/800)%2}.png`, s:0.5});
+        cam.tile({f:cam.sx < 0.3 ? '#72C1E0' : `tile/water_bg_${Math.floor(t/800)%2}.png`, s:0.5});
         for (const n in this.ly[0]) {
             let bg = this.ly[0][n];
             if (bg.data && bg.data.pre && bg.data.pre[0] == 'w' && !bg.data.top)
