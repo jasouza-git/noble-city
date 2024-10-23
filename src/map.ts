@@ -1,6 +1,5 @@
 import { map_obj } from '../component/map';
 export let map_data:map_obj[] = [
-
 	{type:'sand', x:-60.0, y:-36.0, w:1, h:1},
 	{type:'sand', x:-59.0, y:-36.0, w:1, h:1},
 	{type:'sand', x:-58.0, y:-36.0, w:1, h:1},
