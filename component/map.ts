@@ -41,6 +41,7 @@ export class Map extends Entity {
         'tile/water_0.png', 'tile/water_1.png',
         'tile/ws_x_0.png', 'tile/ws_y_0.png', 'tile/ws_xy_0.png', 'tile/ws__0.png',
         'tile/ws_x_1.png', 'tile/ws_y_1.png', 'tile/ws_xy_1.png', 'tile/ws__1.png',
+        'tile/sg_x_0.png', 'tile/sg_y_0.png', 'tile/sg_xy_0.png', 'tile/sg__0.png',
         'tile/test.png',
         // Roads
         'road/dirt.png', 'road/dirt_empty.png',
@@ -98,14 +99,24 @@ export class Map extends Entity {
                 {data:{pre:'ws_'},   m:[0.95175,0.235,0.275,-0.951,0,0.6285]},
                 {data:{pre:'ws_'},   m:[0.26139,0.4746,-2.4687,-0.27096,4.952,2.076]},
                 {data:{pre:'sand'}},
-            ], bg, s.x, s.y, s.w, s.h); else if (s.type == 'grass') {
-                // Inside
-                let n = '';
-                for (let x = 0; x < s.w; x++)
-                    for (let y = 0; y < s.h; y++)
-                        if (bg[n=`${x+s.x}_${y+s.y}`] && bg[n].data?.pre == 'sand')
-                            bg[n].data = {...(bg[n].data||{}), top:'grass'}
-            } else if (s.type == 'dirt') {
+            ], bg, s.x, s.y, s.w, s.h); else if (s.type == 'grass') tile([
+                {},
+                {data:{top:'sg_xy'}, m:[0.312,0.463,-2.45,-0.23,-1,1]},
+                {data:{top:'sg_xy'}, m:[-1,0,0,-1,-1,1]},
+                {data:{top:'sg_y'},  m:[-1,0,0,-1,-1,1]},
+                {data:{top:'sg_xy'}},
+                {data:{top:'sg_x'}},
+                {}, // missing
+                {data:{top:'sg_'},   m:[-0.2404,-0.45704,2.5288,0.2536,0,0]},
+                {data:{top:'sg_xy'}, m:[-0.355,0.37,2.31,0.38,-1,1]},
+                {}, // missing
+                {data:{top:'sg_x'},  m:[-1,0,0,-1,-1,1]},
+                {data:{top:'sg_'},   m:[1,0,0,1,-2,0]},
+                {data:{top:'sg_y'}},
+                {data:{top:'sg_'},   m:[0.95175,0.235,0.275,-0.951,0,0.6285]},
+                {data:{top:'sg_'},   m:[0.26139,0.4746,-2.4687,-0.27096,4.952,2.076]},
+                {data:{top:'grass'}},
+            ], bg, s.x, s.y, s.w, s.h, 'pt'); else if (s.type == 'dirt') {
                 for (let n = 0; n < s.w; n++) { let p =`${s.v?s.x:s.x+n}_${s.v?s.y+n:s.y}`;
                     if (p in fg) fg[p] = {
                         f: 'road/dirt_empty.png',

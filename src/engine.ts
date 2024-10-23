@@ -362,9 +362,10 @@ export class Camera {
             // Image rendering off camera optimization
             if (s.f && !cf) {
                 // width, height
-                let p = s.crop && cc ? [s.crop[2]*s.sx*rc, s.crop[3]*s.sy*rc] :
-                        s.crop && co ? [s.crop[4]*(s.crop[6]+1)*s.sx*rc, s.crop[5]*(s.crop[7]+1)*s.sy*rc] :
-                        [this._eng.imgs[s.f].width*s.sx*rc, this._eng.imgs[s.f].height*s.sy*rc];
+                let p = s.crop && cc ? [s.crop[2], s.crop[3]] :
+                        s.crop && co ? [s.crop[4]*(s.crop[6]+1), s.crop[5]*(s.crop[7]+1)] :
+                        [this._eng.imgs[s.f].width, this._eng.imgs[s.f].height];
+                p = [Math.abs(p[0]*s.sx*rc), Math.abs(p[1]*s.sy*rc)];
                 if (this.w+p[0] < tx || this.h+p[1] < ty || tx+p[0] < 0 || ty+p[1] < 0) {
                     this._ctx.restore();
                     continue;
@@ -1314,14 +1315,15 @@ export function merge(arr:sprite[]):sprite[] {
  * @param w - Width of tiles
  * @param h - Hieght of tiles
  */
-export function tile(tiles:sprite[], m:{[index:string]:sprite}, x:number=0, y:number=0, w:number=1, h:number=1) {
+export function tile(tiles:sprite[], m:{[index:string]:sprite}, x:number=0, y:number=0, w:number=1, h:number=1, prop:string='p') {
     let t = (p:number, X:number, Y:number):void => {
         let n = `${x+X}_${y+Y}`;
         let c = 0;
-        if (m[n] && m[n].data && m[n].data.p) c = m[n].data.p; 
+        if (m[n] && m[n].data && m[n].data[prop]) c = m[n].data[prop]; 
         let r = structuredClone(tiles[c|p]);
         if (!r.f) r.f = 'tile/test.png';
-        r.data = {...(m[n]?.data||{}),...(tiles[c|p]?.data||{}), p:c|p};
+        r.data = {...(m[n]?.data||{}),...(tiles[c|p]?.data||{})};
+        r.data[prop] = c|p;
         m[n] = r;
     };
     // Inside 0b1111

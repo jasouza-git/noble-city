@@ -36,9 +36,7 @@ export class Item extends Entity {
     menu(dt:number, t:number, cam:Camera):sprite[] {
         return [];
     }
-    constructor() {
-        super();
-        //this.x = x*72+y*64;
-        //this.y = y*36-x*19;
+    render(dt: number, t: number, cam: Camera):sprite[] {
+        return [];
     }
 }

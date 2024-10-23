@@ -126,6 +126,7 @@ export class UI extends Entity {
     private m:number = 0; // Menu transition
     focus:Building|null = null; // Entity focused on
     title:string = 'Inventory'; // Inventory title
+    sprites:sprite[] = [];
     render(dt:number, t:number, cam:Camera):sprite[] {
         if (this.eng == null) return [];
         // POPUP
