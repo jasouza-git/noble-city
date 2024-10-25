@@ -106,10 +106,11 @@ export class UI extends Entity {
     pop_t = 0;
     help = 0;
     private help_c = 0;
+    private gameover_c = 0;
     /**
      * Chat box
      */
-    chat:Person|null = null;
+    chats:[Person,string,number][] = [];
     /**
      * The close button was clicked
      */
@@ -140,6 +141,8 @@ export class UI extends Entity {
     focus:Building|null = null; // Entity focused on
     title:string = 'Inventory'; // Inventory title
     sprites:sprite[] = [];
+    chattext:number = 0;
+    fade:number = -1;
     render(dt:number, t:number, cam:Camera):sprite[] {
         if (this.eng == null) return [];
         // POPUP
@@ -158,17 +161,26 @@ export class UI extends Entity {
         if (this.menu != 2 && this.focus != null && Math.abs(this.m-2) > 0.99)
             this.focus = null;
         // Stop chatbox
-        if (this.chat && !this.chat.msg.length) this.chat = null;
+        //if (this.chat && !this.chat.msg.length) this.chat = null;
+        // Chatbox text
+        if (this.chats.length) this.chattext = Math.min(this.chats[0][1].length, this.chattext+dt*50);
         // Shortcuts
         let v = (...n:number[]) => n.map(x=>Math.max(0, 1-Math.abs(this.m-x))).reduce((a,b)=>a+b,0);
         let coin_num = Math.floor(t/200)%4;
         let b = (s:sprite,w:number=1,h=1,m=0) => box(s, cam, w, h, m);
+        // Fade (1s)
+        if (this.fade != -1) {
+            if (this.fade < 0.5 && this.fade+dt >= 0.5) economy.next();
+            this.fade += dt;
+            if (this.fade >= 1) this.fade = -1;
+        }
+        if (economy.time == 0 && !this.chats.length) this.gameover_c += (1-this.gameover_c)*dt*10;
         // Render ui
         return [ {c:0, hover: s=>{ if(s.click) s.cur = 'pointer' }, tf:'font/emulogic.ttf'},
             // Background music
             { f:'music/bgm1_prototype.wav' },
             // Backdrop (click is used to prevent clicks from passing through if its visible)
-            { f:'black', p:[[0,0],[],[cam.w,cam.h]], a:0.5*v(0,2), click:this.menu==1?undefined:()=>{} },
+            { f:'black', p:[[0,0],[],[cam.w,cam.h]], a:0.5*(1-v(1)), click:this.menu==1?undefined:()=>{} },
             // Focused entity
             ...(this.focus == null ? [] : merge(this.focus.render(dt, t, cam))),
             // Title Card
@@ -191,10 +203,10 @@ export class UI extends Entity {
                 bz: 4,
             },
             // Day
-            {   t: `${economy.day} days left`,
+            {   t: `${economy.time} months left`,
                 tz: 15,
                 x: cam.w-130,
-                y: 28-38*v(0,2),
+                y: 28-38*(1-v(1)),
                 o: 'e',
                 f: 'white',
                 b: 'black',
@@ -203,27 +215,31 @@ export class UI extends Entity {
             // FPS
             { t:String(this.eng.fps), o:'nw', tz:8 },
             // Menu
-            ...b({x:cam.w/2, y:cam.h-200*v(0)+50, t:'resume', f:'#4CAF50', click: s=>this.menu=1}, 10, 2),
+            ...b({x:cam.w/2, y:cam.h-200*v(0)+50, t:'resume', f:'#4CAF50', click: s=>{
+                this.menu=1;
+                this.chattext = 0;
+            }}, 10, 2),
             ...b({x:cam.w/2, y:cam.h-200*v(0)+105, t:'options', f:'#2196F3'}, 10, 2),
             ...b({x:cam.w/2, y:cam.h-200*v(0)+160, t:'exit', f:'#F44336'}, 10, 2),
             // Menu button
             ...b({x:cam.w+30-40*v(1), y:10, o:'ne', f:'ui/menu.png', click: s=>this.menu=0, data:{x:-3,y:9}}),
             ...b({x:cam.w+30-80*v(1), y:10, o:'ne', f:'ui/bag.png',  click: s=>{
                 this.title = 'Inventory';
-                this.menu = 2;
+                this.menu = 3;
             }, data:{x:-7,y:7}}),
             ...b({x:cam.w+30-120*v(1), y:10, o:'ne', f:'ui/next.png', click: s => {
-                economy.next();
+                this.fade = 0;
+                
             }, data:{x:-10,y:9}}),
-            ...b({x:cam.w+70-80*v(2), y:10, o:'ne', f:'ui/close.png', click: s=> {
+            ...b({x:cam.w+70-80*v(2,3), y:10, o:'ne', f:'ui/close.png', click: s=> {
                 this.closed();
                 if (this.focus) this.focus.focused = false;
                 this.menu = 1;
             }, data:{x:-4,y:6}}),
-            // Inventory or Building information
-            ...(this.focus == null || this.title.toLowerCase() == 'inventory' ? [
+            // Inventory
+            ...(this.menu == 3 ? [
                 // Inventories
-                ...b({x:cam.w/2, y:cam.h+150-(cam.h/2+135)*v(2)}, 40, 20, 1),
+                ...b({x:cam.w/2, y:cam.h+150-(cam.h/2+135)*v(3)}, 40, 20, 1),
                 // Boxes
                 ...Array(32).fill(0).map((_,n):sprite=>{
                     let x = n%8;
@@ -234,7 +250,7 @@ export class UI extends Entity {
                         s: 0.25,
                         crop: [60,59,60,59,57,56,3,3],
                         x: 75+70*x,
-                        y: 90+70*y+(cam.h-50)*(1-v(2)),
+                        y: 90+70*y+(cam.h-50)*(1-v(3)),
                     }
                 }),
                 // Buildings
@@ -244,14 +260,14 @@ export class UI extends Entity {
                     return [...merge(b.render(dt, t, cam)).map(s => {
                         s.c = 0;
                         s.x = 75+70*x;
-                        s.y = 100+70*y+(cam.h-50)*(1-v(2));
+                        s.y = 100+70*y+(cam.h-50)*(1-v(3));
                         s.s = 0.25;
                         s.click = undefined;
                         return s;
                     }), {
                         c: 0,
                         x: 75+70*x,
-                        y: 90+70*y+(cam.h-50)*(1-v(2)),
+                        y: 90+70*y+(cam.h-50)*(1-v(3)),
                         p: [[-28, -28],[],[58, 57],[]],
                         click: s => {
                             cam.x = b.x;
@@ -267,25 +283,37 @@ export class UI extends Entity {
                     return [
                         ...merge(i.render(dt, t, cam)).map(s => {
                             s.x = 75+70*x;
-                            s.y = 100+70*y+(cam.h-50)*(1-v(2));
+                            s.y = 100+70*y+(cam.h-50)*(1-v(3));
                             return s;
                         }),
-                        i.num(75+70*x,110+70*y+(cam.h-50)*(1-v(2))),
+                        i.num(75+70*x,110+70*y+(cam.h-50)*(1-v(3))),
                     ];
                 }).flat(),
-            ] : [
+                // Title
+                {
+                    t: this.title,
+                    tz: 20,
+                    b: 'black',
+                    bz: 4,
+                    x: cam.w/2,
+                    y: 28*v(3)-10*(1-v(3)),
+                    f:'skyblue'
+                },
+            ] : []),
+            // Building information
+            ...(this.focus != null ? [
                 // Side Description
                 ...b({x:cam.w+150-(cam.w/2+5)*v(2), y:cam.h/2+15}, 20, 19, 1),
                 // Ownership
                 ...b({x:cam.w/4, y:cam.h+25-(cam.h/8+25)*v(2), ...([
-                    {t:'Cant Own', f:'#F44336'},
+                    {t:'Cant Own', f:'#F44336' },
                     {t:'Purchase', f:'#4CAF50', click: s=>{
                         if (this.focus instanceof Building) economy.building(this.focus, true);
                     }},
                     {t:'Sell', f:'#2196F3', click: s=>{
                         if (this.focus instanceof Building) economy.building(this.focus, false);
                     }},
-                ][this.focus.own] ??  {t:'Unknown', f:'#F44336'})}, 15, 2),
+                ][this.focus.own] ??  {t:'Unknown', f:'#F44336'})}, 15, 2, this.focus.own == 0 ? 3 : 0),
                 // Price
                 ...(this.focus.price ? [{
                     t: `₱${this.focus.price}`,
@@ -302,42 +330,43 @@ export class UI extends Entity {
                     s.y = (s.y??0)+cam.h/2+15;
                     return s;
                 }),
-            ]),
+                // Title
+                {
+                    t: this.title,
+                    tz:  15,
+                    b: 'black',
+                    bz: 4,
+                    x: cam.w/4,
+                    y: 70*v(2)-10*(1-v(2)),
+                    f:'skyblue'
+                },
+            ] : []),
             // Chatbox
-            ...(this.chat != null ? [
+            ...(this.chats.length && this.menu == 1 ? [
+                // Backdrop
+                { f:'black', a:0.5, p:[[0,0],[],[cam.w,cam.h],[]], click:()=>{} },
                 // Person
-                ...merge(this.chat.render(dt, t, cam)).map(s=> {
+                ...merge(this.chats[0][0].render(dt, t, cam, this.chats[0][2])).map(s=> {
                     s.x = (s.x??0)+13*cam.w/16;
                     s.y = (s.y??0)+9*cam.h/16+500*(1-v(1));
                     return s;
                 }),
                 // Box
-                ...b({x:cam.w/2, y:cam.h-45+500*(1-v(1)), click: s => this.chat?.next()}, 40, 6),
+                ...b({x:cam.w/2, y:cam.h-45+500*(1-v(1)), click: s => {
+                    this.chats.shift();
+                    this.chattext = 0;
+                }}, 40, 6),
                 // Name
-                { t:this.chat.name, x:35, y:cam.h-85+500*(1-v(1)), o:'nw' } as sprite,
+                { t:this.chats[0][0].name, x:35, y:cam.h-85+500*(1-v(1)), o:'nw' } as sprite,
                 // Message
-                ...this.chat.chat_txt.split('\n').map((l,n) => {
-                    return { t:l, x:35, y:cam.h-50+500*(1-v(1))+20*n, o:'nw', tz:15, a:0.75 } as sprite;
+                ...this.chats[0][1].slice(0,Math.round(this.chattext)).split('\n').map((l,n) => {
+                    return { t:l, x:35, y:cam.h-55+500*(1-v(1))+20*n, o:'nw', tz:10, a:0.75 } as sprite;
                 }),
+                // Skip
+                ...b({x:64, y:cam.h-120+500*(1-v(1)), t:'skip', tz:15, f:'black', bz:0, click: s => {
+                    this.chats = [];
+                }}, 4, 1)
             ] : []),
-            // Title
-            ...(this.title.toLowerCase() == 'inventory' ? [{
-                t: this.title,
-                tz: 20,
-                b: 'black',
-                bz: 4,
-                x: cam.w/2,
-                y: 28*v(2)-10*(1-v(2)),
-                f:'skyblue'
-            }] : [{
-                t: this.title,
-                tz:  15,
-                b: 'black',
-                bz: 4,
-                x: cam.w/4,
-                y: 70*v(2)-10*(1-v(2)),
-                f:'skyblue'
-            }]),
             // Top popup
             ...b({x:cam.w/2, y:50*this.pop_c-30, click:s=>this.pop=[]}, 22, 3),
             ...this.pop.map(s=>{
@@ -345,8 +374,26 @@ export class UI extends Entity {
                 s.y = 50*this.pop_c-25;
                 return s;
             }),
+            // Fade (timeskip)
+            ...(this.fade != -1 ? [
+                { f:'black', a:1-4*Math.pow(this.fade-0.5,2), p:[[0,0],[],[cam.w,cam.h],[]], click:()=>{} },
+            ] : []),
             // Plan
             { f: 'plan.png', o:'nw', s:0.5, y:cam.h*(1-this.help_c) },
+            // Game over
+            ...(economy.time == 0 && !this.chats.length ? [
+                // Dark background
+                { f:'black', a:this.gameover_c, p:[[0,0],[],[cam.w,cam.h],[]], click:()=>{} },
+                // Title
+                { x:cam.w*0.5, y:cam.h*0.25, f:UI.res[1], s:0.35 },
+                // Score
+                { t:'Score:', f:'white', x:cam.w/2, y:cam.h/2+20 },
+                { t:String(economy.points), f:'white', x:cam.w/2, y:cam.h/2+45, a:0.75, tz:25 },
+                // Play again
+                ...b({x:cam.w/2, y:0.75*cam.h+20, t:'Play Again', f:'black', bz:0, click: s => {
+                    location.reload();
+                }}, 15, 2),
+            ] : [])
         ];
     }
 }

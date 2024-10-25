@@ -862,7 +862,7 @@ export class Entity {
      * @param cam {Camera} The camera being rendered to
      * @returns {sprite[]} Sprites to render
      */
-    render(dt:number, t:number, cam:Camera):sprite[] {
+    render(dt:number, t:number, cam:Camera, ...x:any[]):sprite[] {
         return [];
     }
 

@@ -13,20 +13,27 @@ export class Production extends Building {
      */
     type:string = '';
     processes:process_session[] = [];
+    inproccesses:string[] = [];
     setted_process:boolean = false;
     set_process() {
         if (this.type == '') return;
         this.processes = Process.reduce((res,p,id) => {
-            if (p.type == this.type) res.push({
-                id: id,
-                in: p.in.map(x=>new x()),
-                out: p.out.map(x=>new x()),
-                amount: p.amount,
-                dur: p.dur,
-                left: p.dur,
-                on: false,
-                ongoing: false,
-            });
+            if (p.type == this.type) {
+                    res.push({
+                    id: id,
+                    in: p.in.map(x=>new x()),
+                    out: p.out.map(x=>new x()),
+                    amount: p.amount,
+                    dur: p.dur,
+                    left: p.dur,
+                    on: false,
+                    ongoing: false,
+                });
+                p.in.forEach(i => {
+                    let n = new i().name;
+                    if (!this.inproccesses.includes(n)) this.inproccesses.push(n);
+                });;
+            }
             return res;
         }, [] as process_session[]);
         this.setted_process = true;
@@ -34,18 +41,22 @@ export class Production extends Building {
     menu(dt:number, t:number, cam:Camera, r:number):sprite[] {
         if (!this.setted_process) this.set_process();
         let own = economy.own.includes(this);
-        let k:any;
+        let ks = economy.item.filter(x=>this.inproccesses.includes(x.name));
         return [
             // Main window
             ...(own ? [
                 // Assets
-                ...merge((k=economy.item.filter(x=>x.name == 'Fertilizer')[0]).render(dt,t,cam)).map(s => {
-                    s.x = -130;
-                    s.y = -115;
-                    s.s = (s.s??1)*0.75;
-                    return s;
-                }),
-                k.num(-130, -105),
+                ...ks.map((k,n) => [
+                    // Icon
+                    ...merge(k.render(dt,t,cam)).map(s => {
+                        s.x = -130+40*n;
+                        s.y = -115;
+                        s.s = (s.s??1)*0.75;
+                        return s;
+                    }),
+                    // Quantity
+                    k.num(-130+40*n, -105),
+                ]).flat(),
                 // Processes
                 ...this.processes.slice(this.page*5, 5*(this.page+1)).map((p,n) => {
                     return [
@@ -81,7 +92,7 @@ export class Production extends Building {
                         }).flat(),
                         // Process
                         { f:p.on?'ui/arrow.png':'ui/arrow_off.png', s:0.125, y:-72+48*n },
-                        { t:p.on?`${p.left} days left`:`${p.dur} days`, y:-85+48*n, tz:10 }
+                        { t:p.on?`${p.left} months left`:`${p.dur} months`, y:-85+48*n, tz:10 }
                     ]
                 }).flat(),
             ] : [

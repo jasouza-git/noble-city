@@ -7,7 +7,7 @@ export class Fishing extends Production {
     item = 'building/fishing.png';
     name = 'Fishing Area';
     price = 50000;
-    type = 'fishing';
+    type = 'fish';
     render(dt:number, t:number, cam:Camera):sprite[] {
         return [this.base(dt,t,cam,0.75), {
             f: 'building/fishing.png',

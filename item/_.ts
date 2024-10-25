@@ -65,6 +65,7 @@ export let Process:process[] = [
     { type:'farm', in:[Carrot,Tomato], out:[Pork], amount:[20,30,50], dur:3 },
     { type:'farm', in:[Tomato,Fish], out:[Chicken], amount:[10,5,40], dur:3 },
     { type:'fish', in:[Worm], out:[Fish], amount:[1,50], dur:1 },
-    { type:'factory', in:[Fish], out:[Tuna], amount:[1,2], dur:1 },
+    { type:'factory', in:[Fish], out:[Tuna], amount:[2], dur:1 },
     { type:'factory', in:[Tomato], out:[Soup], amount:[3,1], dur:1 },
+    { type:'factory', in:[Garlic], out:[Soup], amount:[3,1], dur:1 },
 ];

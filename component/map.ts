@@ -51,7 +51,12 @@ export class Map extends Entity {
         'road/dirt.png', 'road/dirt_empty.png',
         'road/cement.png', 'road/cement_empty.png',
         // Props
-        'prop/tree.png', 'prop/bush.png', 'prop/coconut.png',
+        'prop/tree.png',
+        'prop/bush.png',
+        'prop/coconut.png',
+        'prop/firework.png',
+        'prop/shell.png',
+        'prop/port.png',
         // Background
         'tile/water_bg_0.png', 'tile/water_bg_1.png',
         // For buildings
@@ -159,7 +164,12 @@ export class Map extends Entity {
                 }
             } else if (s.type == 'bush') fg[p] = {
                 f: 'prop/bush.png',
-                s: 1,
+            }; else if (s.type == 'shell') fg[p] = {
+                f: 'prop/shell.png',
+                s: 0.0625,
+            }; else if (s.type == 'port') fg[p] = {
+                f: 'prop/port.png',
+                m: [1,0,0,1,50,40],
             }; else if (s.type == 'test') fg[p] = {
                 f: 'tile/test.png',
                 a: 0.5,
@@ -185,10 +195,21 @@ export class Map extends Entity {
             // Background Parsing
             if (n == '0') {
                 if (o.data?.pre) o.f = `tile/${o.data.top || o.data.pre}_0.png`;
+                if (o.f == 'tile/sand_0.png' && Math.random() < 0.1) {
+                    let pn = [p[0]+0.5-Math.random(), p[1]+0.5-Math.random()];
+                    bg[`${pn[0]}_${pn[1]}`] = {
+                        f: 'prop/shell.png',
+                        s: 0.0625,
+                        x:pn[0]*72+pn[1]*64,
+                        y:pn[1]*36-pn[0]*19
+                    };
+                }
             }
         }
     }
     init:boolean = true;
+    firework_dur = 2;
+    fireworks:{x:number,y:number,d:number}[] = [];
     render(dt:number, t:number, cam:Camera):sprite[] {
         cam.tile({f:cam.sx < 0.3 ? '#72C1E0' : `tile/water_bg_${Math.floor(t/800)%2}.png`, s:0.5});
         for (const n in this.ly[0]) {
@@ -197,6 +218,14 @@ export class Map extends Entity {
                 bg.f = `tile/${bg.data.pre}_${Math.floor(t/800)%2}.png`;
         }
 
+        if (economy.time == 0 && economy.points >= 0) {
+            this.fireworks = this.fireworks.filter(f=>f.d > 0);
+            if (this.fireworks.length < 30 && Math.random() < 0.2) this.fireworks.push({
+                x: 2000-4000*Math.random(),
+                y: 1000-2000*Math.random(),
+                d: this.firework_dur,
+            });
+        }
         return [
             // Base
             {hover: s=>{
@@ -215,6 +244,13 @@ export class Map extends Entity {
                 }
                 return [x];
             }).reduce((a,b)=>[...a,...b], []),
+            // Fireworks
+            ...(economy.time == 0 && economy.points >= 0 ? this.fireworks.map(f => {
+                let p = this.firework_dur*0.5;
+                let n = f.d < p ? 5 : Math.floor(6*(1-(f.d-p)/(this.firework_dur-p)));
+                f.d -= dt;
+                return { f:'prop/firework.png', crop:[900*(n%2), 900*Math.floor(n/2), 900, 900], s:0.25, x:f.x, y:f.y+(f.d < p ? 30 * (p-f.d) : 0) };
+            }) : [])
         ];
     }
 }
