@@ -41,7 +41,9 @@ let ui = new UI();
 let mainscene = new Scene(game, map, ui);
 map.generate(map_data);
 map.focused = build => {
-    cam.play('sfx/whoosh.mp3', 0.25, 0.4);
+    if (ui.focus != null) return;
+    build.focused = true;
+    cam.play('sfx/whoosh.mp3', 1, 0.4);
     ui.title = build.name;
     ui.menu = 2;
     ui.focus = build;
@@ -63,6 +65,8 @@ ui.chats = [
 ];
 
 let target = 1000000;
+//economy.money = target;
+//economy.time = 1;
 economy.end = () => {
     cam.x = 0;
     cam.y = 0;

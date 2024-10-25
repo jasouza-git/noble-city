@@ -90,12 +90,16 @@ export class UI extends Entity {
         'ui/bag.png',
         'ui/next.png',
         'font/emulogic.ttf',
-        'music/bgm1_prototype.wav',
+        'music/bgm1_prototype.wav', 'music/topic_exudo.mp3',
         'sfx/button.mp3',
-        'sfx/whoosh.mp3',
+        'sfx/whoosh.mp3', 'sfx/zoomout.mp3',
         'ui/button_up.png', 'ui/button_down.png', 'ui/button_disabled.png',
         'plan.png',
-        'ui/arrow.png', 'ui/arrow_off.png'
+        'ui/arrow.png', 'ui/arrow_off.png',
+        'sfx/cash-register-sfx.mp3',
+        'sfx/Pause.mp3', 'sfx/Time-Forward.mp3', 'sfx/Unpause_Play.mp3',
+        'sfx/selling_sfx_1.mp3', 'sfx/selling_sfx_2.mp3', 'sfx/selling_sfx_3.mp3',
+        'sfx/typing.wav',
     ];
     static depend = [...Items, ...People];
     /**
@@ -143,6 +147,7 @@ export class UI extends Entity {
     sprites:sprite[] = [];
     chattext:number = 0;
     fade:number = -1;
+    new = true;
     render(dt:number, t:number, cam:Camera):sprite[] {
         if (this.eng == null) return [];
         // POPUP
@@ -158,8 +163,9 @@ export class UI extends Entity {
         // Menu
         this.m += (this.menu-this.m)*dt*10;
         // Stop focusing on entity
-        if (this.menu != 2 && this.focus != null && Math.abs(this.m-2) > 0.99)
+        if (this.menu != 2 && this.focus != null && Math.abs(this.m-2) > 0.99) {
             this.focus = null;
+        }
         // Stop chatbox
         //if (this.chat && !this.chat.msg.length) this.chat = null;
         // Chatbox text
@@ -178,7 +184,7 @@ export class UI extends Entity {
         // Render ui
         return [ {c:0, hover: s=>{ if(s.click) s.cur = 'pointer' }, tf:'font/emulogic.ttf'},
             // Background music
-            { f:'music/bgm1_prototype.wav' },
+            { f:'music/topic_exudo.mp3', a:0.125 },
             // Backdrop (click is used to prevent clicks from passing through if its visible)
             { f:'black', p:[[0,0],[],[cam.w,cam.h]], a:0.5*(1-v(1)), click:this.menu==1?undefined:()=>{} },
             // Focused entity
@@ -215,25 +221,34 @@ export class UI extends Entity {
             // FPS
             { t:String(this.eng.fps), o:'nw', tz:8 },
             // Menu
-            ...b({x:cam.w/2, y:cam.h-200*v(0)+50, t:'resume', f:'#4CAF50', click: s=>{
+            ...b({x:cam.w/2, y:cam.h-200*v(0)+50, t:this.new?'play':'resume', f:'#4CAF50', click: s=>{
                 this.menu=1;
                 this.chattext = 0;
+                this.new = false;
+                cam.play('sfx/Pause.mp3');
             }}, 10, 2),
             ...b({x:cam.w/2, y:cam.h-200*v(0)+105, t:'options', f:'#2196F3'}, 10, 2),
             ...b({x:cam.w/2, y:cam.h-200*v(0)+160, t:'exit', f:'#F44336'}, 10, 2),
             // Menu button
-            ...b({x:cam.w+30-40*v(1), y:10, o:'ne', f:'ui/menu.png', click: s=>this.menu=0, data:{x:-3,y:9}}),
+            ...b({x:cam.w+30-40*v(1), y:10, o:'ne', f:'ui/menu.png', click: s=>{
+                this.menu=0;
+                cam.play('sfx/Unpause_Play.mp3');
+            }, data:{x:-3,y:9}}),
             ...b({x:cam.w+30-80*v(1), y:10, o:'ne', f:'ui/bag.png',  click: s=>{
                 this.title = 'Inventory';
                 this.menu = 3;
             }, data:{x:-7,y:7}}),
             ...b({x:cam.w+30-120*v(1), y:10, o:'ne', f:'ui/next.png', click: s => {
+                if (economy.time == 0) return;
                 this.fade = 0;
-                
+                cam.play('sfx/Time-Forward.mp3', 1, 2);
             }, data:{x:-10,y:9}}),
             ...b({x:cam.w+70-80*v(2,3), y:10, o:'ne', f:'ui/close.png', click: s=> {
                 this.closed();
-                if (this.focus) this.focus.focused = false;
+                if (this.focus) {
+                    this.focus.focused = false;
+                    cam.play('sfx/zoomout.mp3', 1, 0.4);
+                }
                 this.menu = 1;
             }, data:{x:-4,y:6}}),
             // Inventory
@@ -343,6 +358,8 @@ export class UI extends Entity {
             ] : []),
             // Chatbox
             ...(this.chats.length && this.menu == 1 ? [
+                // Chating sfx
+                { f:'sfx/typing.wav', a:this.chattext==this.chats[0][1].length?0:1 },
                 // Backdrop
                 { f:'black', a:0.5, p:[[0,0],[],[cam.w,cam.h],[]], click:()=>{} },
                 // Person
@@ -354,6 +371,7 @@ export class UI extends Entity {
                 // Box
                 ...b({x:cam.w/2, y:cam.h-45+500*(1-v(1)), click: s => {
                     this.chats.shift();
+                    if (this.chats.length) cam.play('sfx/retro-text-dialouge-typing-sfx.wav');
                     this.chattext = 0;
                 }}, 40, 6),
                 // Name

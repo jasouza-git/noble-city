@@ -1,4 +1,4 @@
-import { popup } from '.';
+import { cam, popup } from '.';
 import { Building } from '../component/map';
 import { Item } from '../item';
 import { Items, process, Process, process_session } from '../item/_';
@@ -67,6 +67,12 @@ export class Economy {
                 return i;
         return null;
     }
+    get_item_sys(target:typeof Item):Item|null {
+        for (const i of this.items)
+            if (i.constructor == target)
+                return i;
+        return null;
+    }
 
     /**
      * User loans an amount
@@ -84,6 +90,7 @@ export class Economy {
             popup([{t:'Fully paid loans', f:'black', tz:15}]);
             amount = this.loan;
         }
+        cam.play(`sfx/selling_sfx_${Math.floor(3*Math.random())+1}.mp3`);
         this.money += amount;
         this.loan += amount;
     }
@@ -95,6 +102,7 @@ export class Economy {
             return popup([{t:'Insufficent savings ', f:'#F44336', tz:15}]);
         if (this.money < amount)
             return popup([{t:'Insufficent funds', f:'#F44336', tz:15}]);
+        cam.play(`sfx/selling_sfx_${Math.floor(3*Math.random())+1}.mp3`);
         this.money -= amount;
         this.saving += amount;
     }
@@ -110,6 +118,7 @@ export class Economy {
                     build.price = Math.round(build.price*0.95);
                     build.own = 1;
                     this.own.splice(n, 1);
+                    cam.play('sfx/cash-register-sfx.mp3');
                     return;
                 } else n++;
             }
@@ -117,6 +126,7 @@ export class Economy {
         }
         if (this.money < build.price)
             return popup([{t:'Insufficent funds', f:'#F44336', tz:15}]);
+        cam.play(`sfx/selling_sfx_${Math.floor(3*Math.random())+1}.mp3`);
         this.money -= build.price;
         build.price = Math.round(build.price*0.95);
         build.own = 2;
@@ -134,6 +144,7 @@ export class Economy {
             this.money -= i.price*amount;
             u.quantity += amount;
             i.quantity -= amount;
+            cam.play(`sfx/selling_sfx_${Math.floor(3*Math.random())+1}.mp3`);
             return;
         }
         // Buying
@@ -144,6 +155,7 @@ export class Economy {
             this.money -= i.price*amount;
             u.quantity += amount;
             i.quantity -= amount;
+            cam.play('sfx/cash-register-sfx.mp3');
             return;
         }
         popup([{t:'Unknown item', f:'#F44336', tz:15}]);
@@ -215,14 +227,31 @@ export class Economy {
         // Update
         this.loan = Math.round(this.loan*(1 + 0.08 / 30));
         this.saving = Math.round(this.saving*(1 + 0.05 / 30));
+        // Supply and demand prediction
         this.items.forEach((i,n) => {
-            /*let ps = Process.filter(p => p.out.some(o => i.constructor == o));
-            //i.price = 
-            this.item_prices[n].push(i.price);*/
-            let qs = Math.round(i.quantity/2+1.5*i.quantity*Math.random());
+            let qs = Math.round(i.quantity/2+i.quantity*Math.random());
             i.price = Math.round(i.price+this.k*(this.item_demand[n]-qs)/i.quantity);
             i.quantity = Math.round(Math.max(100+(25-50*Math.random()),Math.round(i.quantity*2*Math.random())));
             this.item_prices[n].push(i.price);
+        });
+        // The product cant be cheaper then the ingredients
+        this.items.forEach((i,n) => {
+            let ps = Process.filter(p => p.out.some(o => i.constructor == o));
+            let pv = i.price;
+            for (const p of ps) {
+                let pc = 0;
+                p.in.forEach((j, m) => {
+                    let o = this.get_item_sys(j);
+                    if (o == null) return;
+                    pc += o.price*p.amount[m];
+                });
+                let m = 0;
+                p.out.forEach((j,w) => {
+                    if (i.constructor == j) m = w;
+                })
+                pv = Math.max(pv, Math.round(pc*(1+p.dur/5)/(p.amount[p.in.length+m])));
+            }
+            i.price = pv;
         });
         // Processes
         for (const p of this.processes) {
@@ -253,7 +282,8 @@ export class Economy {
         this.items.forEach(i => {
             i.quantity = Math.round(500*Math.random()+1000*Math.random());
             this.item_prices.push([i.price]);
-            this.item_demand.push(Math.round(i.quantity/2+1.5*i.quantity*Math.random()));
+            let q = i.quantity;
+            this.item_demand.push(Math.round(q/2+q*Math.random()));
         });
     }
 }
