@@ -1153,7 +1153,16 @@ export class Engine {
      * 
      * Note: must not be included in final version
      */
-    debug:{m:number[], _m:number[], mp:(dt:number)=>void, v:number, vp:(dt:number)=>void} = {
+    debug:{
+        m:number[],
+        _m:number[],
+        mp:(dt:number)=>void,
+        v:number,
+        vp:(dt:number)=>void,
+        p:number[][],
+        pn:number,
+        pp:(dt:number)=>void,
+    } = {
         /**
          * Matrix tranform
          */
@@ -1207,6 +1216,25 @@ export class Engine {
             if (this.inp.key['a'] != undefined) this.debug.v -= dt*(this.inp.key['a'] == 0 ? 1 : this.inp.key['a']&2 ? 0.25 : 0);
             if (this.inp.key['d'] != undefined) this.debug.v += dt*(this.inp.key['d'] == 0 ? 1 : this.inp.key['d']&2 ? 0.25 : 0);
             console.log(this.debug.v);
+        },
+        p:[],
+        pn:-1,
+        pp: (dt:number):void => {
+            if (this.debug.pn == -1) return;
+            if (this.inp.dkey['q'] == 0) this.debug.pn = (this.debug.pn-1)%this.debug.p.length;
+            if (this.inp.dkey['e'] == 0) this.debug.pn = (this.debug.pn+1)%this.debug.p.length;
+            if (this.inp.key['a'] != undefined) this.debug.p[this.debug.pn][0] -= dt*(this.inp.key['a'] == 0 ? 20 : this.inp.key['a']&2 ? 5 : 0);
+            if (this.inp.key['d'] != undefined) this.debug.p[this.debug.pn][0] += dt*(this.inp.key['d'] == 0 ? 20 : this.inp.key['d']&2 ? 5 : 0);
+            if (this.inp.key['w'] != undefined) this.debug.p[this.debug.pn][1] -= dt*(this.inp.key['w'] == 0 ? 20 : this.inp.key['w']&2 ? 5 : 0);
+            if (this.inp.key['s'] != undefined) this.debug.p[this.debug.pn][1] += dt*(this.inp.key['s'] == 0 ? 20 : this.inp.key['s']&2 ? 5 : 0);
+            if (this.inp.dkey['r'] == 0) {
+                this.debug.p.push([...this.debug.p[this.debug.p.length-1]]);
+                this.debug.pn = this.debug.p.length-1;
+            }
+            if (this.inp.dkey['f'] == 0) {
+                this.debug.p = this.debug.p.map(x=>x.map(y=>Math.round(y)));
+                console.log(JSON.stringify(this.debug.p));
+            }
         }
     };
 

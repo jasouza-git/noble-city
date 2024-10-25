@@ -1,9 +1,11 @@
 import { map_obj } from '../component/map';
-
-/*export let map_data:map_obj[] = [
+/*
+export let map_data:map_obj[] = [
     {type:'sand', x:-10, y:-10, w:20, h:20},
-    {type:'grass',x:-9, y:-5, w:18, h:14},
-    {type:'fishing', x:7, y:9},
+    {type:'grass',x:-9, y:-9, w:18, h:18},
+	{type:'factory',x:0,y:0},
+	{type:'test',x:0.001,y:0},
+    /*{type:'fishing', x:7, y:9},
     {type:'dirt',x:3,y:-8,w:16,v:true},
     {type:'cement',x:-8,y:1,w:16},
     {type:'bank',x:2,y:0},
@@ -17,9 +19,9 @@ import { map_obj } from '../component/map';
     {type:'tree',x:0,y:3},
     {type:'bush',x:-5,y:5},
     {type:'forest',x:-8,y:-8,w:5,h:5},
-	/*{type:'fish',x:0,y:0},
+	{type:'fish',x:0,y:0},
 	{type:'port',x:0,y:0},
-	{type:'test',x:0.001,y:0},
+	{type:'test',x:0.001,y:0},*
 ];*/
 
 

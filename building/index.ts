@@ -73,7 +73,6 @@ export class Building extends Entity {
             y: this.y*c+0.6*cam.h*(1-c),
             s: s*c+1*(1-c),
             click: s => {
-                
                 this.on_focused(this);
             },
         };

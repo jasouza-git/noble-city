@@ -15,7 +15,7 @@ export class Bank extends Building {
     render(dt:number, t:number, cam:Camera):sprite[] {
         return [this.base(dt,t,cam), {
             f: 'building/bank.png',
-            p: [[-62, -100],[],[133, 130],[]],
+            p: [[20,-98],[71,-70],[71,10],[-5,30],[-62,-5],[-62,-77],[]],
             m: [1,0,0,1,4,-32],
         }];
     }

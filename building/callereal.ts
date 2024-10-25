@@ -18,7 +18,7 @@ export class CalleReal extends Building {
     render(dt:number, t:number, cam:Camera):sprite[] {
         return [this.base(dt,t,cam), {
             f: 'building/callereal.png',
-            p: [[-85, -140],[],[185, 160],[]],
+            p: [[13,-138],[97,-90],[97,-3],[22,16],[-18,14],[-86,-26],[-86,-111]],
             m: [1,0,0,1,0,-60],
         }];
     }

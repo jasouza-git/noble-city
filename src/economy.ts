@@ -82,13 +82,13 @@ export class Economy {
             return popup([{t:'Insufficent funds ', f:'#F44336', tz:15}]);
         if (this.loan > 100000 && amount > 0)
             return popup([{t:'Reached Max loaned', f:'#F44336', tz:15}]);
-        if (this.loan+amount > 100000) {
+        if (amount > 0 && this.loan+amount > 100000) {
             popup([{t:'Reached Max loaned', f:'black', tz:15}]);
             amount = 100000-this.loan;
         }
         if (amount < 0 && this.loan+amount <= 0) {
             popup([{t:'Fully paid loans', f:'black', tz:15}]);
-            amount = this.loan;
+            amount = -this.loan;
         }
         cam.play(`sfx/selling_sfx_${Math.floor(3*Math.random())+1}.mp3`);
         this.money += amount;
@@ -213,10 +213,12 @@ export class Economy {
             this.items.forEach(i => {
                 let u = this.get_item(i);
                 if (u == null) return;
-                p += u.quantity*i.price;
+                let pv = u.quantity*i.price;
+                p += isNaN(pv) ? 0 : pv;
             });
             this.own.forEach(b => {
-                p += b.price;
+                let pv = b.price;
+                p += isNaN(pv) ? 0 : pv;
             });
             this.points = p;
             this.end();
@@ -230,7 +232,8 @@ export class Economy {
         // Supply and demand prediction
         this.items.forEach((i,n) => {
             let qs = Math.round(i.quantity/2+i.quantity*Math.random());
-            i.price = Math.round(i.price+this.k*(this.item_demand[n]-qs)/i.quantity);
+            let tmp = Math.round(i.price+this.k*(this.item_demand[n]-qs)/i.quantity);
+            i.price = isNaN(tmp) ? i.price : tmp;
             i.quantity = Math.round(Math.max(100+(25-50*Math.random()),Math.round(i.quantity*2*Math.random())));
             this.item_prices[n].push(i.price);
         });
@@ -249,7 +252,9 @@ export class Economy {
                 p.out.forEach((j,w) => {
                     if (i.constructor == j) m = w;
                 })
-                pv = Math.max(pv, Math.round(pc*(1+p.dur/5)/(p.amount[p.in.length+m])));
+                let tmp = Math.round(pc*(1+p.dur/5)/(p.amount[p.in.length+m]));
+                if (isNaN(tmp)) continue;
+                pv = Math.max(pv, tmp);
             }
             i.price = pv;
         });

@@ -18,12 +18,6 @@ cam.s = 0.25;
 
 // Game Map
 
-// Debugging (Remove this on Production)
-/*
-cam.s = 2;//0.25;
-cam.y = -120;
-cam.x = 280;*/
-for (const f of Items) economy.item.push(new f());
 
 // First Scene : Loading Menu
 let loadmenu = new LoadMenu();
@@ -41,7 +35,7 @@ let ui = new UI();
 let mainscene = new Scene(game, map, ui);
 map.generate(map_data);
 map.focused = build => {
-    if (ui.focus != null) return;
+    if (ui.focus != null || ui.menu != 1) return;
     build.focused = true;
     cam.play('sfx/whoosh.mp3', 1, 0.4);
     ui.title = build.name;
@@ -51,6 +45,7 @@ map.focused = build => {
 export function popup(sprites:sprite[]):void {
     return ui.popup(sprites);
 }
+for (const f of Items) economy.item.push(new f());
 
 let iroiro = new Iroiro();
 let mentor = new Mentor();
@@ -64,7 +59,7 @@ ui.chats = [
     [mentor, 'But do not fear newbie, I shall guide you in your journey\nfor FREE!', 6],
 ];
 
-let target = 1000000;
+let target = 100000;
 //economy.money = target;
 //economy.time = 1;
 economy.end = () => {
@@ -79,7 +74,7 @@ economy.end = () => {
     ] : economy.points < target ? [
         // User passed but did not get beyond target
         [mentor, `Congraduations on your bussiness! You have a\nnet total of ${Math.abs(economy.points)} pesos!`, 1],
-        [iroiro, 'Although we didnt reach out target, thanks for trying', 0],
+        [iroiro, 'Although we didnt reach out target, thanks for helping out', 0],
     ]: [
         // User passed target
         [mentor, `Wow! You were able to meet the target goal!\nYou have a net total of ${Math.abs(economy.points)} pesos!`, 4],
@@ -87,9 +82,15 @@ economy.end = () => {
     ];
 };
 
-// Debug
+// Debugging (Remove this on Production)
 /*ui.menu = 1;
-ui.chats = [];*/
+ui.chats = [];
+cam.s = 2;//0.25;
+cam.y = -120;
+cam.x = 280;
+cam.s = 2;
+cam.y -= 50;
+ui.menu = 1;*/
 
 // Main loop
 game.loop = (dt:number, t:number, cam:Camera) => {
