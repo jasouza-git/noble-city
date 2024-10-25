@@ -6,7 +6,7 @@ export class Factory extends Production {
     static key = 'factory';
     item = 'building/factory.png';
     name = 'Factory';
-    price = 60000;
+    price = 50000;
     type = 'factory';
     //init = true;
     render(dt:number, t:number, cam:Camera):sprite[] {

@@ -202,6 +202,20 @@ export class Economy {
     processes:process_session[] = [];
 
 
+    get_points():number {
+        let p = this.money+this.saving-this.loan;
+        this.items.forEach(i => {
+            let u = this.get_item(i);
+            if (u == null) return;
+            let pv = u.quantity*i.price;
+            p += isNaN(pv) ? 0 : pv;
+        });
+        this.own.forEach(b => {
+            let pv = b.price;
+            p += isNaN(pv) ? 0 : pv;
+        });
+        return p;
+    }
     /**
      * A month has passed
      */
@@ -209,18 +223,7 @@ export class Economy {
         if (this.time == 0) return;
         this.time--;
         if (this.time == 0) {
-            let p = this.money+this.saving-this.loan;
-            this.items.forEach(i => {
-                let u = this.get_item(i);
-                if (u == null) return;
-                let pv = u.quantity*i.price;
-                p += isNaN(pv) ? 0 : pv;
-            });
-            this.own.forEach(b => {
-                let pv = b.price;
-                p += isNaN(pv) ? 0 : pv;
-            });
-            this.points = p;
+            this.points = this.get_points();
             this.end();
         }
         // Log

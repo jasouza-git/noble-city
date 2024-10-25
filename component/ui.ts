@@ -134,6 +134,11 @@ export class UI extends Entity {
      */
     tutorial = 1;
     /**
+     * Presentation mode
+     */
+    present = 0;
+    private present_c = 0;
+    /**
      * Menu
      * 
      * 0) Main Menu
@@ -159,7 +164,13 @@ export class UI extends Entity {
         if (this.pop.length && performance.now()-this.pop_t > 3000) this.pop = [];
         // Help
         this.help_c += (this.help-this.help_c)*dt*10;
-        if (this.eng.inp.dkey['q'] == 0) this.help = 1-this.help;
+        if (this.eng.inp.dkey['z'] == 0) this.help = 1-this.help;
+        // Presentation mode
+        this.present_c += (this.present-this.present_c)*dt*10;
+        if (this.eng.inp.dkey['arrowright'] == 0) this.present++;
+        if (this.eng.inp.dkey['arrowleft'] == 0) this.present--;
+        if (this.eng.inp.dkey['arrowup'] == 0) this.present = Math.abs(this.present);
+        if (this.eng.inp.dkey['arrowdown'] == 0) this.present = -Math.abs(this.present);
         // Menu
         this.m += (this.menu-this.m)*dt*10;
         // Stop focusing on entity
@@ -176,8 +187,8 @@ export class UI extends Entity {
         let b = (s:sprite,w:number=1,h=1,m=0) => box(s, cam, w, h, m);
         // Fade (1s)
         if (this.fade != -1) {
-            if (this.fade < 0.5 && this.fade+dt >= 0.5) economy.next();
-            this.fade += dt;
+            if (this.fade < 0.5 && this.fade+dt*2 >= 0.5) economy.next();
+            this.fade += dt*2;
             if (this.fade >= 1) this.fade = -1;
         }
         if (economy.time == 0 && !this.chats.length) this.gameover_c += (1-this.gameover_c)*dt*10;
@@ -185,74 +196,86 @@ export class UI extends Entity {
         return [ {c:0, hover: s=>{ if(s.click) s.cur = 'pointer' }, tf:'font/emulogic.ttf'},
             // Background music
             { f:'music/topic_exudo.mp3', a:0.125 },
-            // Backdrop (click is used to prevent clicks from passing through if its visible)
-            { f:'black', p:[[0,0],[],[cam.w,cam.h]], a:0.5*(1-v(1)), click:this.menu==1?undefined:()=>{} },
-            // Focused entity
-            ...(this.focus == null ? [] : merge(this.focus.render(dt, t, cam))),
-            // Title Card
-            { x:cam.w*0.5, y:cam.h*0.25*(2*v(0)-1), f:UI.res[1], s:0.35 },
-            // Coin
-            {   f:'coins.png',
-                x:(cam.w*0.72+25)*v(0)-50*v(0)+25,
-                y:(cam.h*0.2+25)*v(0)-50*v(0)+25,
-                crop:[Math.abs(2-coin_num)*22,0,22,23],
-                sx:coin_num==1?-1.5:1.5,
-                sy:1.5,
-            },
-            {   t: String(economy.money),
-                tz: 20,
-                x: 44,
-                y: 28-38*v(0),
-                o: 'w',
-                f: 'gold',
-                b: 'black',
-                bz: 4,
-            },
-            // Day
-            {   t: `${economy.time} months left`,
-                tz: 15,
-                x: cam.w-130,
-                y: 28-38*(1-v(1)),
-                o: 'e',
-                f: 'white',
-                b: 'black',
-                bz: 5,
-            },
-            // FPS
-            { t:String(this.eng.fps), o:'nw', tz:8 },
-            // Menu
-            ...b({x:cam.w/2, y:cam.h-200*v(0)+50, t:this.new?'play':'resume', f:'#4CAF50', click: s=>{
-                this.menu=1;
-                this.chattext = 0;
-                this.new = false;
-                cam.play('sfx/Pause.mp3');
-            }}, 10, 2),
-            ...b({x:cam.w/2, y:cam.h-200*v(0)+105, t:'options', f:'#2196F3'}, 10, 2),
-            ...b({x:cam.w/2, y:cam.h-200*v(0)+160, t:'exit', f:'#F44336'}, 10, 2),
-            // Menu button
-            ...b({x:cam.w+30-40*v(1), y:10, o:'ne', f:'ui/menu.png', click: s=>{
-                this.menu=0;
-                cam.play('sfx/Unpause_Play.mp3');
-            }, data:{x:-3,y:9}}),
-            ...b({x:cam.w+30-80*v(1), y:10, o:'ne', f:'ui/bag.png',  click: s=>{
-                this.title = 'Inventory';
-                this.menu = 3;
-            }, data:{x:-7,y:7}}),
-            ...b({x:cam.w+30-120*v(1), y:10, o:'ne', f:'ui/next.png', click: s => {
-                if (economy.time == 0) return;
-                this.fade = 0;
-                cam.play('sfx/Time-Forward.mp3', 1, 2);
-            }, data:{x:-10,y:9}}),
-            ...b({x:cam.w+70-80*v(2,3), y:10, o:'ne', f:'ui/close.png', click: s=> {
-                this.closed();
-                if (this.focus) {
-                    this.focus.focused = false;
-                    cam.play('sfx/zoomout.mp3', 1, 0.4);
-                }
-                this.menu = 1;
-            }, data:{x:-4,y:6}}),
+            ...(this.present <= 0 ? [
+                // Backdrop (click is used to prevent clicks from passing through if its visible)
+                { f:'black', p:[[0,0],[],[cam.w,cam.h]], a:0.5*(1-v(1)), click:this.menu==1?undefined:()=>{} },
+                // Focused entity
+                ...(this.focus == null ? [] : merge(this.focus.render(dt, t, cam))),
+                // Title Card
+                { x:cam.w*0.5, y:cam.h*0.25*(2*v(0)-1)+50*v(0), f:UI.res[1], s:0.35 }, //y+50
+                // Coin
+                {   f:'coins.png',
+                    x:(cam.w*0.72+25)*v(0)-50*v(0)+25,
+                    y:(cam.h*0.2+75)*v(0)-50*v(0)+25,
+                    crop:[Math.abs(2-coin_num)*22,0,22,23],
+                    sx:coin_num==1?-1.5:1.5,
+                    sy:1.5,
+                },
+                {   t: String(economy.money),
+                    tz: 20,
+                    x: 44,
+                    y: 28-38*v(0),
+                    o: 'w',
+                    f: 'gold',
+                    b: 'black',
+                    bz: 4,
+                },
+                // Day
+                {   t: `${economy.time} months left`,
+                    tz: 15,
+                    x: cam.w-130,
+                    y: 28-38*(1-v(1)),
+                    o: 'e',
+                    f: 'white',
+                    b: 'black',
+                    bz: 5,
+                },
+                // Net worth
+                {   t: `Net worth: ${economy.get_points()} pesos`,
+                    o: 'sw',
+                    x: 10,
+                    y: cam.h+50-60*(this.chats.length ? 0 : v(1)),
+                    tz: 10,
+                    b: 'white',
+                    bz: 5,
+                    f: 'black',
+                },
+                // FPS
+                { t:String(this.eng.fps), o:'nw', tz:8 },
+                // Menu
+                ...b({x:cam.w/2, y:cam.h-200*v(0)+100, t:this.new?'play':'resume', f:'#4CAF50', click: s=>{  //y+50
+                    if (!this.new) cam.play('sfx/Pause.mp3');
+                    this.menu=1;
+                    this.chattext = 0;
+                    this.new = false;
+                }}, 10, 2),
+                /*...b({x:cam.w/2, y:cam.h-200*v(0)+105, t:'options', f:'#2196F3'}, 10, 2),
+                ...b({x:cam.w/2, y:cam.h-200*v(0)+160, t:'exit', f:'#F44336'}, 10, 2),*/
+                // Menu button
+                ...b({x:cam.w+30-40*v(1), y:10, o:'ne', f:'ui/menu.png', click: s=>{
+                    this.menu=0;
+                    cam.play('sfx/Unpause_Play.mp3');
+                }, data:{x:-3,y:9}}),
+                ...b({x:cam.w+30-80*v(1), y:10, o:'ne', f:'ui/bag.png',  click: s=>{
+                    this.title = 'Inventory';
+                    this.menu = 3;
+                }, data:{x:-7,y:7}}),
+                ...b({x:cam.w+30-120*v(1), y:10, o:'ne', f:'ui/next.png', click: s => {
+                    if (economy.time == 0) return;
+                    this.fade = 0;
+                    cam.play('sfx/Time-Forward.mp3', 1, 2.2);
+                }, data:{x:-10,y:9}}),
+                ...b({x:cam.w+70-80*v(2,3), y:10, o:'ne', f:'ui/close.png', click: s=> {
+                    this.closed();
+                    if (this.focus) {
+                        this.focus.focused = false;
+                        cam.play('sfx/zoomout.mp3', 1, 0.4);
+                    }
+                    this.menu = 1;
+                }, data:{x:-4,y:6}}),
+            ] as sprite[] : []),
             // Inventory
-            ...(this.menu == 3 ? [
+            ...(this.menu == 3 && this.present <=0 ? [
                 // Inventories
                 ...b({x:cam.w/2, y:cam.h+150-(cam.h/2+135)*v(3)}, 40, 20, 1),
                 // Boxes
@@ -316,7 +339,7 @@ export class UI extends Entity {
                 },
             ] : []),
             // Building information
-            ...(this.focus != null ? [
+            ...(this.focus != null && this.present <=0  ? [
                 // Side Description
                 ...b({x:cam.w+150-(cam.w/2+5)*v(2), y:cam.h/2+15}, 20, 19, 1),
                 // Ownership
@@ -357,11 +380,15 @@ export class UI extends Entity {
                 },
             ] : []),
             // Chatbox
-            ...(this.chats.length && this.menu == 1 ? [
+            ...(this.chats.length && this.menu == 1 && this.present <=0  ? [
                 // Chating sfx
                 { f:'sfx/typing.wav', a:this.chattext==this.chats[0][1].length?0:1 },
                 // Backdrop
-                { f:'black', a:0.5, p:[[0,0],[],[cam.w,cam.h],[]], click:()=>{} },
+                { f:'black', a:0.5, p:[[0,0],[],[cam.w,cam.h],[]], click:()=>{
+                    this.chats.shift();
+                    this.chattext = 0;
+                    cam.play('sfx/button.mp3', 0.25);
+                } },
                 // Person
                 ...merge(this.chats[0][0].render(dt, t, cam, this.chats[0][2])).map(s=> {
                     s.x = (s.x??0)+13*cam.w/16;
@@ -371,7 +398,6 @@ export class UI extends Entity {
                 // Box
                 ...b({x:cam.w/2, y:cam.h-45+500*(1-v(1)), click: s => {
                     this.chats.shift();
-                    if (this.chats.length) cam.play('sfx/retro-text-dialouge-typing-sfx.wav');
                     this.chattext = 0;
                 }}, 40, 6),
                 // Name
@@ -398,6 +424,83 @@ export class UI extends Entity {
             ] : []),
             // Plan
             { f: 'plan.png', o:'nw', s:0.5, y:cam.h*(1-this.help_c) },
+            // Presentation
+            ...(this.present > 0 ? [{ f:'black', p:[[0,0],[],[cam.w,cam.h]], a:0.75, click:()=>{} },] : []),
+            ...(this.present > 0 ? ([[
+                // Intro
+                { f:'ui/title.png', s:0.25, y:-100 }, //y+50
+                { y:10, f:'white', tz:10, b:'black', bz:2, t:'Noble City is a tycoon-style economic simulator where you\'ll' },
+                { y:25, f:'white', tz:10, b:'black', bz:2, t:'build and expand your business to reach a net worth of' },
+                { y:40, f:'white', tz:10, b:'black', bz:2, t:'Dinagyang Festival. Players must skillfully navigate the' },
+                { y:55, f:'white', tz:10, b:'black', bz:2, t:'challenges of supply and demand, make strategic investments,' },
+                { y:70, f:'white', tz:10, b:'black', bz:2, t:'and carefully manage their business to avoid bankruptcy while' },
+                { y:85, f:'white', tz:10, b:'black', bz:2, t:'growing their influence in the city.' },
+                ],[
+                // Objectives
+                { t:'Objectives', f:'white', b:'black', bz:2, y:-150 },
+                { t:'Promote Local Commerce', f:'white', tz:10, b:'black', bz:2, y:-80, x:-cam.w/4 },
+                { t:'Economy-Oriented Gameplay', f:'white', tz:10, b:'black', bz:2, y:-80, x:cam.w/4 },
+                { f: 'building/callereal.png', x:-cam.w/4, y:-50+50, s:0.5 },
+                { x:-cam.w/4, y:10+50, f:'white', tz:7, b:'black', bz:2, t:'The game\'s settings, items, and' },
+                { x:-cam.w/4, y:20+50, f:'white', tz:7, b:'black', bz:2, t:'design are inspired by Iloilo,' },
+                { x:-cam.w/4, y:30+50, f:'white', tz:7, b:'black', bz:2, t:'showcasing local culture. Key' },
+                { x:-cam.w/4, y:40+50, f:'white', tz:7, b:'black', bz:2, t:'locations like Calle Real are' },
+                { x:-cam.w/4, y:50+50, f:'white', tz:7, b:'black', bz:2, t:'central to business activities,' },
+                { x:-cam.w/4, y:60+50, f:'white', tz:7, b:'black', bz:2, t:'making it both educational and' },
+                { x:-cam.w/4, y:70+50, f:'white', tz:7, b:'black', bz:2, t:'locally rooted.' },
+                { f: 'building/bank.png', x:cam.w/4, y:-50+50, s:0.5 },
+                { x:cam.w/4, y:10+50, f:'white', tz:7, b:'black', bz:2, t:'As an economic simulator, the game' },
+                { x:cam.w/4, y:20+50, f:'white', tz:7, b:'black', bz:2, t:'introduces players to supply' },
+                { x:cam.w/4, y:30+50, f:'white', tz:7, b:'black', bz:2, t:'and demand, interest rates, and' },
+                { x:cam.w/4, y:40+50, f:'white', tz:7, b:'black', bz:2, t:'profit management, helping them' },
+                { x:cam.w/4, y:50+50, f:'white', tz:7, b:'black', bz:2, t:'understand core principles of' },
+                { x:cam.w/4, y:60+50, f:'white', tz:7, b:'black', bz:2, t:'business and finance.' },
+                ],[
+                // Gameplay
+                { t:'Gameplay', f:'white', b:'black', bz:2, y:-150 },
+                { y:-100, f:'white', tz:8, b:'black', bz:2, t:'Players start with nothing and have 10 months to build a net worth' },
+                { y:-90, f:'white', tz:8, b:'black', bz:2, t:'of 100,000 pesos, enough to invest in the Dinagyang festival. This' },
+                { y:-80, f:'white', tz:8, b:'black', bz:2, t:'time limit encourages strategic choices. The player also has multiple' },
+                { y:-70, f:'white', tz:8, b:'black', bz:2, t:'flexible paths to obtain this goal:' },
+                { f: 'building/farm.png', x:-cam.w/4-50, y:0, s:0.5 },
+                { f: 'building/fishing.png', x:-cam.w/4+50, y:0, s:0.3 },
+                { y:0, x:-50, f:'white', tz:8, b:'black', bz:2, o:'w', t:'Producing by farming or fishing' },
+                { f: 'building/factory.png', x:-cam.w/4+50, y:50, s:0.3 },
+                { y:50, x:-50, f:'white', tz:8, b:'black', bz:2, o:'w', t:'Manufacturing by creating valuable goods' },
+                { f: 'building/bank.png', x:-cam.w/4+50, y:100, s:0.3 },
+                { y:100, x:-50, f:'white', tz:8, b:'black', bz:2, o:'w', t:'Investing in changing market prices' },
+                { y:150, f:'white', tz:8, b:'black', bz:2, t:'They can also combine these paths as they grow, diversifying their business.' },
+                ],[
+                // Design Features
+                { t:'Design Features', f:'white', b:'black', bz:2, y:-150 },
+                { y:-100, x:-300, f:'white', tz:10, b:'black', bz:2, o:'w', t:'Starting Small with Loans' },
+                { y:-80, x:-250, f:'white', tz:8, b:'black', bz:2, o:'w', t:'Players begin with a loan, simulating real business funding and' },
+                { y:-70, x:-250, f:'white', tz:8, b:'black', bz:2, o:'w', t:'encouraging them to manage both earnings and debt.' },
+                { y:-50, x:-300, f:'white', tz:10, b:'black', bz:2, o:'w', t:'Fast Gameplay' },
+                { y:-30, x:-250, f:'white', tz:8, b:'black', bz:2, o:'w', t:'There\'s no waiting time, so players stay engaged, making quick' },
+                { y:-20, x:-250, f:'white', tz:8, b:'black', bz:2, o:'w', t:'decisions with time as a valuable resource.' },
+                { y:0, x:-300, f:'white', tz:10, b:'black', bz:2, o:'w', t:'Adaptive Market' },
+                { y:20, x:-250, f:'white', tz:8, b:'black', bz:2, o:'w', t:'Prices shift with supply and demand and random factors, so players' },
+                { y:30, x:-250, f:'white', tz:8, b:'black', bz:2, o:'w', t:'need to adapt—there\'s no single way to win.' },
+                { y:50, x:-300, f:'white', tz:10, b:'black', bz:2, o:'w', t:'Challenging Objective' },
+                { y:70, x:-250, f:'white', tz:8, b:'black', bz:2, o:'w', t:'The target of 100,000 pesos is achievable but challenging, adding' },
+                { y:80, x:-250, f:'white', tz:8, b:'black', bz:2, o:'w', t:'depth and excitement.' },
+                ],[
+                // Future Plans
+                { t:'Future Plans', f:'white', b:'black', bz:2, y:-150 },
+                { y:-100, x:-300, f:'white', tz:10, b:'black', bz:2, o:'w', t:'New Roles and Market Scenarios' },
+                { y:-80, x:-250, f:'white', tz:8, b:'black', bz:2, o:'w', t:'Adding more roles, a land value system, events like typhoons,' },
+                { y:-70, x:-250, f:'white', tz:8, b:'black', bz:2, o:'w', t:'and competitors will deepen gameplay and create new challenges.' },
+                { y:-50, x:-300, f:'white', tz:10, b:'black', bz:2, o:'w', t:'Labor and Tax System' },
+                { y:-30, x:-250, f:'white', tz:8, b:'black', bz:2, o:'w', t:'Introducing labor management and a tax system will add realism' },
+                { y:-20, x:-250, f:'white', tz:8, b:'black', bz:2, o:'w', t:' and make financial planning even more essential.' },
+            ]] as sprite[][]).map((ss,n) => {
+                return ss.map(s => {
+                    s.x = (s.x??0)+cam.w/2+cam.w*(1-this.present_c)+n*cam.w;
+                    s.y = (s.y??0)+cam.h/2;
+                    return s;
+                });
+            }).flat() : []),
             // Game over
             ...(economy.time == 0 && !this.chats.length ? [
                 // Dark background

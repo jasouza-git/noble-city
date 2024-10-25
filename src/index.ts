@@ -85,7 +85,8 @@ economy.end = () => {
 // Debugging (Remove this on Production)
 /*ui.menu = 1;
 ui.chats = [];
-cam.s = 2;//0.25;
+ui.present = 3;
+/*cam.s = 2;//0.25;
 cam.y = -120;
 cam.x = 280;
 cam.s = 2;
