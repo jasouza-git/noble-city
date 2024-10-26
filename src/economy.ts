@@ -230,8 +230,8 @@ export class Economy {
         this.logs[0].push(this.saving);
         this.logs[1].push(this.loan);
         // Update
-        this.loan = Math.round(this.loan*(1 + 0.08 / 30));
-        this.saving = Math.round(this.saving*(1 + 0.05 / 30));
+        this.loan = Math.round(this.loan*(1 + 0.06));
+        this.saving = Math.round(this.saving*(1 + 0.04));
         // Supply and demand prediction
         this.items.forEach((i,n) => {
             let qs = Math.round(i.quantity/2+i.quantity*Math.random());

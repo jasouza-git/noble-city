@@ -4,7 +4,7 @@ import { Camera } from '../src/engine';
 export class Fertilizer extends Item {
     static res = ['item/fertilizer.png'];
     name = 'Fertilizer';
-    price = 32;
+    price = 60;
     color = '#45231E';
     render(dt:number, t:number, cam:Camera) {
         return [this.base(dt,t,cam), {

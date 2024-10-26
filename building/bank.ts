@@ -30,7 +30,7 @@ export class Bank extends Building {
             // { p: [[-135,-125],[],[270,55],[]], f:'red', a:0.5 },
 
             // Savings Account
-            { t:'Savings (5% rate)', o:'w', x:-140, y:-30, f:'black', tz:10, a:0.75 },
+            { t:'Savings (4% rate)', o:'w', x:-140, y:-30, f:'black', tz:10, a:0.75 },
             { t:String(economy.saving), o:'w', x:-140, y:-10, f:'black', tz:15 },
             ...box({x:-100,y:15,t:'1,000',tz:15,f:'black',bz:0, click:s=>economy.saved(1000*(this.act_save_out?-1:1))}, cam, 5, 1),
             ...box({x:0,y:15,t:'10,000',tz:15,f:'black',bz:0, click:s=>economy.saved(10000*(this.act_save_out?-1:1))}, cam, 6, 1),
@@ -38,7 +38,7 @@ export class Bank extends Building {
             ...box({x:90,y:-20,t:this.act_save_out?'deposit':'withdraw', tz:10,f:'black',bz:0, click:s=>this.act_save_out=!this.act_save_out}, cam, 6, 1),
             
             // Loans Account
-            { t:'Loans (8% rate)', o:'w', x:-140, y:70, f:'black', tz:10, a:0.75 },
+            { t:'Loans (6% rate)', o:'w', x:-140, y:70, f:'black', tz:10, a:0.75 },
             { t:String(economy.loan), o:'w', x:-140, y:90, f:'black', tz:15 },
             ...box({x:-100,y:115,t:'1,000',tz:15,f:'black',bz:0, click:s=>economy.loaned(1000*(this.act_loan_pay?-1:1))}, cam, 5, 1),
             ...box({x:0,y:115,t:'10,000',tz:15,f:'black',bz:0, click:s=>economy.loaned(10000*(this.act_loan_pay?-1:1))}, cam, 6, 1),

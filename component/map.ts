@@ -239,7 +239,10 @@ export class Map extends Entity {
                     let b:Building = x.data.build;
                     return [
                         ...merge(b.render(dt, t, cam)),
-                        ...merge(b.render_pin(dt, t, cam)),
+                        ...(b.own == 2 && !b.focused ? [
+                            { f:'ui/pin.png', x:b.x, y:b.y-150, s:0.5 }
+                        ] : [])
+                        //...merge(b.render_pin(dt, t, cam)),
                     ];
                 }
                 return [x];

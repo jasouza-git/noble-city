@@ -6,7 +6,7 @@ export class Fishing extends Production {
     static key = 'fishing';
     item = 'building/fishing.png';
     name = 'Fishing Area';
-    price = 50000;
+    price = 30000;
     type = 'fish';
     render(dt:number, t:number, cam:Camera):sprite[] {
         return [this.base(dt,t,cam,0.75), {

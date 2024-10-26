@@ -100,6 +100,7 @@ export class UI extends Entity {
         'sfx/Pause.mp3', 'sfx/Time-Forward.mp3', 'sfx/Unpause_Play.mp3',
         'sfx/selling_sfx_1.mp3', 'sfx/selling_sfx_2.mp3', 'sfx/selling_sfx_3.mp3',
         'sfx/typing.wav',
+        'ui/pin.png',
     ];
     static depend = [...Items, ...People];
     /**
@@ -430,11 +431,11 @@ export class UI extends Entity {
                 // Intro
                 { f:'ui/title.png', s:0.25, y:-100 }, //y+50
                 { y:10, f:'white', tz:10, b:'black', bz:2, t:'Noble City is a tycoon-style economic simulator where you\'ll' },
-                { y:25, f:'white', tz:10, b:'black', bz:2, t:'build and expand your business to reach a net worth of' },
-                { y:40, f:'white', tz:10, b:'black', bz:2, t:'Dinagyang Festival. Players must skillfully navigate the' },
-                { y:55, f:'white', tz:10, b:'black', bz:2, t:'challenges of supply and demand, make strategic investments,' },
-                { y:70, f:'white', tz:10, b:'black', bz:2, t:'and carefully manage their business to avoid bankruptcy while' },
-                { y:85, f:'white', tz:10, b:'black', bz:2, t:'growing their influence in the city.' },
+                { y:25, f:'white', tz:10, b:'black', bz:2, t:'build and expand your business to reach a net worth of 100,000' },
+                { y:40, f:'white', tz:10, b:'black', bz:2, t:'pesos for the Dinagyang Festival. Players must skillfully' },
+                { y:55, f:'white', tz:10, b:'black', bz:2, t:'navigate the challenges of supply and demand, make strategic ' },
+                { y:70, f:'white', tz:10, b:'black', bz:2, t:'investments, and carefully manage their business to avoid' },
+                { y:85, f:'white', tz:10, b:'black', bz:2, t:'bankruptcy while growing their influence in the city.' },
                 ],[
                 // Objectives
                 { t:'Objectives', f:'white', b:'black', bz:2, y:-150 },

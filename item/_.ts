@@ -57,15 +57,17 @@ export interface process_session {
  * - `dur` - Duration to finish in days
  */
 export let Process:process[] = [
-    { type:'farm', in:[Fertilizer], out:[Carrot], amount:[1,20], dur:2 },
-    { type:'farm', in:[Fertilizer], out:[Garlic], amount:[1,10], dur:1 },
-    { type:'farm', in:[Fertilizer], out:[Kadyos], amount:[1,12], dur:2 },
-    { type:'farm', in:[Fertilizer], out:[Tomato], amount:[1,10], dur:1 },
-    { type:'farm', in:[Fertilizer], out:[Radish], amount:[1,10], dur:1 },
-    { type:'farm', in:[Carrot,Tomato], out:[Pork], amount:[20,30,50], dur:3 },
-    { type:'farm', in:[Tomato,Fish], out:[Chicken], amount:[10,5,40], dur:3 },
-    { type:'fish', in:[Worm], out:[Fish], amount:[1,50], dur:1 },
-    { type:'factory', in:[Fish], out:[Tuna], amount:[2,10], dur:1 },
-    { type:'factory', in:[Tomato], out:[Soup], amount:[3,5], dur:1 },
-    { type:'factory', in:[Garlic], out:[Soup], amount:[3,5], dur:1 },
+    { type:'farm', in:[Fertilizer], out:[Carrot], amount:[10,20], dur:2 },
+    { type:'farm', in:[Fertilizer], out:[Garlic], amount:[10,15], dur:1 },
+    { type:'farm', in:[Fertilizer], out:[Kadyos], amount:[10,25], dur:2 },
+    { type:'farm', in:[Fertilizer], out:[Tomato], amount:[10,15], dur:1 },
+    { type:'farm', in:[Fertilizer], out:[Langka], amount:[10,15], dur:1 },
+    { type:'farm', in:[Fertilizer], out:[Radish], amount:[10,17], dur:1 },
+    { type:'farm', in:[Carrot,Fish], out:[Pork], amount:[20, 30, 70], dur:3 },
+    { type:'farm', in:[Tomato,Worm], out:[Chicken], amount:[5,10,30], dur:2 },
+    { type:'fish', in:[Langka], out:[Worm], amount:[5,12], dur:1 },
+    { type:'fish', in:[Worm], out:[Fish], amount:[10,20], dur:1 },
+    { type:'factory', in:[Fish], out:[Tuna], amount:[50,50], dur:1 },
+    { type:'factory', in:[Tomato, Garlic, Carrot], out:[Soup], amount:[15,5,10,30], dur:1 },
+    { type:'factory', in:[Tomato, Garlic, Radish], out:[Soup], amount:[15,5,10,35], dur:1 },
 ];

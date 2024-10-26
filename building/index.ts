@@ -82,7 +82,7 @@ export class Building extends Entity {
      * Renders popup pin
      */
     render_pin(dt:number, t:number, cam:Camera, s:number=1):sprite[] {
-        if (this.popup.length == 0) return [];
+        if (this.popup.length == 0 || this.own == 2) return [];
         return [ {x: this.x, y: this.y-100},
             {
                 f:'ui/pin.png',
